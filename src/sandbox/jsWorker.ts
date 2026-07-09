@@ -17,20 +17,20 @@ function toDisplayValue(value: unknown): string {
   return String(value);
 }
 
-function evaluate(source: string, isoInput: string): unknown {
+function evaluate(source: string, isoInput: string, timeZone?: string): unknown {
   const factory = new Function(`"use strict"; return (${source});`);
   const fn = factory();
   if (typeof fn !== "function") {
     throw new TypeError("Pasted source did not evaluate to a function.");
   }
-  return fn(isoInput);
+  return fn(isoInput, timeZone);
 }
 
 self.onmessage = (event: MessageEvent<JsRunRequest>) => {
-  const { id, source, isoInput } = event.data;
+  const { id, source, isoInput, timeZone } = event.data;
   const start = performance.now();
   try {
-    const value = evaluate(source, isoInput);
+    const value = evaluate(source, isoInput, timeZone);
     const result: JsRunResult = {
       id,
       ok: true,
