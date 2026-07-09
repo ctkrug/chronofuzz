@@ -5,7 +5,7 @@ land before anything else — see `docs/VISION.md`.
 
 ## Epic 1 — Core diagnosis loop
 
-- [ ] **1.1 (WOW) Automated per-landmine evaluators produce real verdicts for JS functions.**
+- [x] **1.1 (WOW) Automated per-landmine evaluators produce real verdicts for JS functions.**
       Today the workbench shows raw actual-vs-expected text for the user to eyeball; this story adds
       a machine-checkable evaluator per landmine so each row gets a real pass/fail/ambiguous verdict.
   - Running the battery against the pre-filled sample function shows at least one failing (red)
@@ -15,14 +15,14 @@ land before anything else — see `docs/VISION.md`.
   - Ambiguous landmines (DST fall-back) render a distinct "ambiguous" state — never silently
     coerced into pass or fail.
 
-- [ ] **1.2 Expand the corpus to at least 20 landmines across all six categories.**
+- [x] **1.2 Expand the corpus to at least 20 landmines across all six categories.**
   - `LANDMINES.length >= 20`.
   - Each of the six categories (`dst`, `leap-day`, `leap-second`, `epoch-boundary`, `parsing`,
     `iso-week`) has at least 2 entries.
   - Each entry's `context` field cites a verifiable real-world fact (a specific date or rule),
     confirmed correct in review.
 
-- [ ] **1.3 Inline diff view for failing rows.**
+- [x] **1.3 Inline diff view for failing rows.**
   - A failing result row expands to show the actual value and the expected value side by side.
   - Long values wrap instead of causing horizontal scroll at 390px viewport width.
 
