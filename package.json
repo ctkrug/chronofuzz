@@ -17,6 +17,7 @@
     "lint": "eslint ."
   },
   "devDependencies": {
+    "happy-dom": "^20.10.6",
     "typescript": "^5.9.3",
     "vite": "^5.4.21",
     "vitest": "^2.1.9"
