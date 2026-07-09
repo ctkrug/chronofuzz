@@ -30,8 +30,7 @@ export const LANDMINES: Landmine[] = [
       "1:30 AM occurred twice on this date (once at UTC-4, once at UTC-5). A correct " +
       "implementation should be explicit about which occurrence it means, rather than " +
       "silently picking one and treating the instant as unambiguous.",
-    context:
-      "US DST ended at 2:00 AM local time on 2023-11-05, when clocks fell back to 1:00 AM.",
+    context: "US DST ended at 2:00 AM local time on 2023-11-05, when clocks fell back to 1:00 AM.",
   },
   {
     id: "leap-day-non-leap-year-rollover",
@@ -88,7 +87,7 @@ export const LANDMINES: Landmine[] = [
   },
   {
     id: "parsing-date-only-string-timezone-shift",
-    title: "\"2024-01-01\" parses as UTC midnight, not local midnight",
+    title: '"2024-01-01" parses as UTC midnight, not local midnight',
     category: "parsing",
     isoInput: "2024-01-01",
     expectedNote:

@@ -9,23 +9,23 @@ headings, and a red strike mark that reads like an engineer's red pen on a print
 
 ## 2. Tokens
 
-| Token | Value | Use |
-|---|---|---|
-| `--bg` | `#0a0f1a` | page background |
-| `--surface-1` | `#0f1826` | panel background |
-| `--surface-2` | `#152034` | raised panel / card |
-| `--text` | `#e8edf5` | primary text |
-| `--text-muted` | `#8896ab` | secondary text, labels |
-| `--accent` | `#38bdf8` | primary accent — grid lines, links, focus rings |
-| `--accent-support` | `#f59e0b` | secondary accent — landmine markers, warnings |
-| `--success` | `#34d399` | passing landmine |
-| `--danger` | `#ef4444` | failing landmine strike |
-| type display | `IBM Plex Mono` | wordmark, headings — technical/precise |
-| type UI | `IBM Plex Sans` | body copy, editor labels, buttons |
-| spacing unit | 8px scale (4, 8, 16, 24, 32, 48, 64) | |
-| corner radius | 6px (10px for large panels) | sharp, technical — not soft/toy |
-| shadow/glow | soft outer cyan glow (`0 0 0 1px rgba(56,189,248,.15), 0 8px 24px rgba(0,0,0,.4)`) on raised panels; no heavy drop shadows | |
-| motion | UI transitions 150ms ease-out; a landmine strike draws on with a 120ms stroke animation (like a pen mark), not a fade | |
+| Token              | Value                                                                                                                      | Use                                             |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| `--bg`             | `#0a0f1a`                                                                                                                  | page background                                 |
+| `--surface-1`      | `#0f1826`                                                                                                                  | panel background                                |
+| `--surface-2`      | `#152034`                                                                                                                  | raised panel / card                             |
+| `--text`           | `#e8edf5`                                                                                                                  | primary text                                    |
+| `--text-muted`     | `#8896ab`                                                                                                                  | secondary text, labels                          |
+| `--accent`         | `#38bdf8`                                                                                                                  | primary accent — grid lines, links, focus rings |
+| `--accent-support` | `#f59e0b`                                                                                                                  | secondary accent — landmine markers, warnings   |
+| `--success`        | `#34d399`                                                                                                                  | passing landmine                                |
+| `--danger`         | `#ef4444`                                                                                                                  | failing landmine strike                         |
+| type display       | `IBM Plex Mono`                                                                                                            | wordmark, headings — technical/precise          |
+| type UI            | `IBM Plex Sans`                                                                                                            | body copy, editor labels, buttons               |
+| spacing unit       | 8px scale (4, 8, 16, 24, 32, 48, 64)                                                                                       |                                                 |
+| corner radius      | 6px (10px for large panels)                                                                                                | sharp, technical — not soft/toy                 |
+| shadow/glow        | soft outer cyan glow (`0 0 0 1px rgba(56,189,248,.15), 0 8px 24px rgba(0,0,0,.4)`) on raised panels; no heavy drop shadows |                                                 |
+| motion             | UI transitions 150ms ease-out; a landmine strike draws on with a 120ms stroke animation (like a pen mark), not a fade      |                                                 |
 
 Both fonts load from Google Fonts with system-monospace/system-sans fallbacks.
 

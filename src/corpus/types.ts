@@ -1,10 +1,5 @@
 export type LandmineCategory =
-  | "dst"
-  | "leap-day"
-  | "leap-second"
-  | "epoch-boundary"
-  | "parsing"
-  | "iso-week";
+  "dst" | "leap-day" | "leap-second" | "epoch-boundary" | "parsing" | "iso-week";
 
 /**
  * A single curated real-world date/time failure mode. `isoInput` is fed to the
