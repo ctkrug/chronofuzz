@@ -183,17 +183,27 @@ button:disabled {
   cursor: progress;
 }
 
+.results-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-3);
+}
+
 .results-pane h2 {
   font-family: var(--font-display);
   font-size: 1.1rem;
-  margin: 0 0 var(--space-2);
+  margin: 0;
 }
 
-.results-hint {
+.results-summary {
+  margin: 0;
   color: var(--text-muted);
-  font-size: 0.85rem;
-  max-width: 70ch;
-  margin: 0 0 var(--space-3);
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
 }
 
 .results-list {
@@ -206,32 +216,220 @@ button:disabled {
   gap: var(--space-2);
 }
 
+/* Per-verdict accent, applied to the badge, left rail, and strike. */
 .result-item {
-  background: var(--surface-2);
-  border-left: 3px solid var(--text-muted);
+  --verdict: var(--text-muted);
+  position: relative;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent), var(--surface-2);
+  border: 1px solid rgba(56, 189, 248, 0.08);
+  border-left: 3px solid var(--verdict);
   border-radius: var(--radius);
   padding: var(--space-3);
+  animation: row-in 180ms ease-out both;
 }
 
-.result-item.result-ok {
-  border-left-color: var(--success);
+.result-item.result-pass {
+  --verdict: var(--success);
+}
+.result-item.result-fail {
+  --verdict: var(--danger);
+}
+.result-item.result-ambiguous {
+  --verdict: var(--accent-support);
 }
 
-.result-item.result-error {
-  border-left-color: var(--danger);
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
 }
 
-.result-output {
+.result-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.verdict-badge {
+  flex-shrink: 0;
   font-family: var(--font-display);
-  font-size: 0.85rem;
+  font-weight: 700;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  color: var(--bg);
+  background: var(--verdict);
+  border-radius: 999px;
+  padding: 2px var(--space-2);
+}
+
+.result-title {
+  position: relative;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+/* The red pen strike over a failing landmine — the signature detail. */
+.strike {
+  position: absolute;
+  top: 50%;
+  left: -2px;
+  right: -2px;
+  height: 2px;
+  background: var(--danger);
+  transform-origin: left center;
+  transform: scaleX(0);
+  border-radius: 2px;
+}
+
+.result-fail .strike {
+  animation: strike-draw 140ms 120ms ease-out forwards;
+}
+
+@keyframes strike-draw {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.result-category {
+  margin-left: auto;
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  color: var(--accent);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: var(--radius);
+  padding: 1px var(--space-2);
+}
+
+.verdict-headline {
+  margin: var(--space-2) 0 0;
+  font-size: 0.88rem;
+  color: var(--text);
+}
+
+.result-actual {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.io-label {
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.result-actual code,
+.diff-cell code {
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.result-fail .result-actual code {
+  color: var(--danger);
+}
+.result-ambiguous .result-actual code {
   color: var(--accent-support);
-  margin-top: var(--space-1);
+}
+.result-pass .result-actual code {
+  color: var(--success);
+}
+
+.result-diff {
+  margin-top: var(--space-2);
+  border: 1px solid rgba(56, 189, 248, 0.12);
+  border-radius: var(--radius);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.result-diff summary {
+  cursor: pointer;
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.8rem;
+  color: var(--accent);
+  list-style: none;
+}
+
+.result-diff summary::-webkit-details-marker {
+  display: none;
+}
+
+.result-diff summary::before {
+  content: "▸ ";
+  display: inline-block;
+  transition: transform var(--motion);
+}
+
+.result-diff[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.diff-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+  padding: 0 var(--space-3) var(--space-3);
+}
+
+.diff-cell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border-radius: var(--radius);
+  background: var(--surface-1);
+}
+
+.diff-actual {
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+.diff-actual code {
+  color: var(--danger);
+}
+.diff-expected {
+  border: 1px solid rgba(52, 211, 153, 0.3);
+}
+.diff-expected code {
+  color: var(--success);
 }
 
 .result-note {
   color: var(--text-muted);
-  font-size: 0.85rem;
-  margin-top: var(--space-1);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  max-width: 70ch;
+  margin: var(--space-2) 0 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .result-item {
+    animation: none;
+  }
+  .strike {
+    transform: scaleX(1);
+    animation: none;
+  }
+  .result-diff summary::before {
+    transition: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .diff-grid {
+    grid-template-columns: 1fr;
+  }
+  .result-category {
+    margin-left: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
