@@ -44,3 +44,13 @@ export function utcFields(
 export function observed(outcome: ProbeOutcome): string {
   return outcome.ok ? outcome.value : outcome.error;
 }
+
+/**
+ * True when the function refused the input rather than silently producing a
+ * value — either it threw (an errored outcome) or it returned a JS `Invalid
+ * Date`, whose display value is the literal string "Invalid Date". For inputs
+ * that denote a nonexistent instant, refusing is the correct, safe behavior.
+ */
+export function isRejection(outcome: ProbeOutcome): boolean {
+  return !outcome.ok || outcome.value.trim() === "Invalid Date";
+}
