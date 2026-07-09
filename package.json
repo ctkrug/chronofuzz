@@ -1,0 +1,15 @@
+{
+  "name": "chronofuzz",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Paste a date-handling function, run it against a curated battery of real date/time landmines.",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "lint": "eslint ."
+  }
+}
