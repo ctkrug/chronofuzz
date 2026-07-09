@@ -22,7 +22,8 @@ lets you point your function at it in seconds.
 1. Paste a function (JS or Python) that takes a date/time value and returns a transformed or
    derived value.
 2. Chronofuzz executes it once per landmine, in an isolated sandbox:
-   - **JavaScript** runs in a dedicated Web Worker with no DOM/network access.
+   - **JavaScript** runs in a dedicated Web Worker with no access to the DOM or the host page's
+     state (network lockdown via CSP is tracked in the backlog).
    - **Python** runs via [Pyodide](https://pyodide.org) (CPython compiled to WebAssembly),
      loaded lazily from a CDN so the base app stays small.
 3. Each landmine's expected behavior is compared against your function's actual output.
