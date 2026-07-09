@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sameInstant, utcFields, observed } from "../src/eval/grading";
+import { sameInstant, utcFields, observed, isRejection } from "../src/eval/grading";
 
 describe("sameInstant", () => {
   it("treats equal instants in different formats as the same", () => {
@@ -33,5 +33,20 @@ describe("observed", () => {
 
   it("returns the error for a failed outcome", () => {
     expect(observed({ ok: false, error: "boom" })).toBe("boom");
+  });
+});
+
+describe("isRejection", () => {
+  it("treats a thrown error as a rejection", () => {
+    expect(isRejection({ ok: false, error: "RangeError: Invalid time value" })).toBe(true);
+  });
+
+  it("treats a returned Invalid Date as a rejection", () => {
+    expect(isRejection({ ok: true, value: "Invalid Date" })).toBe(true);
+    expect(isRejection({ ok: true, value: "  Invalid Date  " })).toBe(true);
+  });
+
+  it("does not treat a real value as a rejection", () => {
+    expect(isRejection({ ok: true, value: "2023-03-01T12:00:00.000Z" })).toBe(false);
   });
 });
