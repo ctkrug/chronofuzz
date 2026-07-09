@@ -9,8 +9,6 @@ import { JsSandboxRunner } from "./runner";
 export function jsProbeRunner(runner: JsSandboxRunner, source: string): ProbeRunner {
   return async (probe) => {
     const result = await runner.run(source, probe.isoInput, probe.timeZone);
-    return result.ok
-      ? { ok: true, value: result.value }
-      : { ok: false, error: result.error };
+    return result.ok ? { ok: true, value: result.value } : { ok: false, error: result.error };
   };
 }

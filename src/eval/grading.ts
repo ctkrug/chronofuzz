@@ -32,9 +32,7 @@ export function sameInstant(a: string, b: string): boolean {
  * detect silent rollovers (e.g. Feb 29 → Mar 1) without any timezone ambiguity,
  * since UTC fields are stable across runtimes.
  */
-export function utcFields(
-  iso: string,
-): { year: number; month: number; day: number } | null {
+export function utcFields(iso: string): { year: number; month: number; day: number } | null {
   const d = new Date(iso);
   if (!Number.isFinite(d.getTime())) return null;
   return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() };
