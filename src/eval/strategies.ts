@@ -9,6 +9,15 @@ import { pass, fail, ambiguous, sameInstant, observed, isRejection } from "./gra
 export type GradeFn = (outcomes: ProbeOutcome[]) => Verdict;
 
 /**
+ * The single probe outcome these strategies grade on. Every strategy here runs
+ * exactly one probe; if none arrived, that is itself an errored outcome rather
+ * than a crash.
+ */
+function single(outcomes: ProbeOutcome[]): ProbeOutcome {
+  return outcomes[0] ?? { ok: false, error: "No probe outcome was produced." };
+}
+
+/**
  * The correct behavior is to reproduce one exact instant. Passes when the
  * function's output denotes `expectedIso` (compared as an absolute instant, so
  * formatting differences don't matter); fails otherwise, surfacing the wrong
@@ -16,7 +25,7 @@ export type GradeFn = (outcomes: ProbeOutcome[]) => Verdict;
  */
 export function expectInstant(expectedIso: string, note: string): GradeFn {
   return (outcomes) => {
-    const outcome = outcomes[0];
+    const outcome = single(outcomes);
     const actual = observed(outcome);
     if (outcome.ok && sameInstant(outcome.value, expectedIso)) {
       return pass("Correct instant", note, actual);
@@ -35,7 +44,7 @@ export function expectInstant(expectedIso: string, note: string): GradeFn {
  */
 export function expectRejection(note: string): GradeFn {
   return (outcomes) => {
-    const outcome = outcomes[0];
+    const outcome = single(outcomes);
     const actual = observed(outcome);
     if (isRejection(outcome)) {
       return pass("Rejected (as it should)", note, actual);
@@ -54,7 +63,7 @@ export function expectRejection(note: string): GradeFn {
  */
 export function expectShiftOrReject(forwardIso: string, note: string): GradeFn {
   return (outcomes) => {
-    const outcome = outcomes[0];
+    const outcome = single(outcomes);
     const actual = observed(outcome);
     if (isRejection(outcome)) {
       return pass("Rejected the skipped time", note, actual);
@@ -76,7 +85,7 @@ export function expectShiftOrReject(forwardIso: string, note: string): GradeFn {
  */
 export function alwaysAmbiguous(note: string): GradeFn {
   return (outcomes) => {
-    const outcome = outcomes[0];
+    const outcome = single(outcomes);
     return ambiguous("No single correct answer", note, observed(outcome));
   };
 }
