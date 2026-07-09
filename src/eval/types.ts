@@ -16,6 +16,9 @@ export interface Verdict {
   detail: string;
   /** The function's observed output (or error), shown inline. */
   actual?: string;
+  /** The correct value the actual is measured against, for the inline diff.
+   * Absent when there is no single correct answer (ambiguous verdicts). */
+  expected?: string;
 }
 
 /**
