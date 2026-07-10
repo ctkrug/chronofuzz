@@ -175,11 +175,13 @@ circular dependency.
 - `npm test` — Vitest (happy-dom, pinned `TZ=UTC` for deterministic zone grading). Includes an
   `axe-core` audit of the mounted app (`test/a11y.test.ts`) and of the static landing page
   (`test/site.test.ts`) alongside the unit/integration suite.
-- `npm run test:coverage` — Vitest with v8 coverage (`@vitest/coverage-v8`); every pure core
-  logic module (`corpus/`, `eval/`, `export/`, `share/`) sits at 100% lines. The worker entry
-  points (`jsWorker.ts`, `pyWorker.ts`) and `main.ts` are intentionally excluded — they're thin
-  message-plumbing wrappers around the tested `evalCore`/`pyEvalCore`, untestable without a real
-  browser Worker.
+- `npm run test:coverage` — Vitest with v8 coverage (`@vitest/coverage-v8`), gated by the
+  thresholds in `vitest.config.ts` (90% lines/statements/branches, 80% functions) so a future
+  change can't silently erode coverage; CI runs this instead of plain `npm test`. Every pure
+  core logic module (`corpus/`, `eval/`, `export/`, `share/`) sits at 100% lines. The worker
+  entry points (`jsWorker.ts`, `pyWorker.ts`) and `main.ts` are excluded from both the report and
+  the threshold — they're thin message-plumbing wrappers around the tested `evalCore`/
+  `pyEvalCore`, untestable without a real browser Worker.
 - `npm run typecheck` — `tsc` for app + worker projects.
 - `npm run lint` / `npm run format:check` — ESLint + Prettier.
 - `npm run build` — typecheck + `vite build` → `dist/` (static, base-path `./`, subpath-safe).
