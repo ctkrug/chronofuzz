@@ -114,6 +114,21 @@ describe("PySandboxRunner", () => {
     expect(result.ok && result.value).toBe("ok");
   });
 
+  it("terminate() immediately settles an in-flight run() instead of leaving it pending until its own timeout", async () => {
+    vi.useFakeTimers();
+    const pending = runner.run("def normalize(iso, time_zone): ...", "2023-03-12");
+
+    runner.terminate();
+    const result = await pending;
+
+    expect(result.ok).toBe(false);
+    // Settling must not still be waiting on the 1000ms timeout — advancing
+    // zero time here proves the promise already resolved from terminate()
+    // itself, honoring the SandboxRunner.terminate() contract ("cancels any
+    // in-flight/backing work"), not from the timeout firing.
+    expect(worker.terminated).toBe(true);
+  });
+
   it("terminate() discards the worker so the next run() spawns a new one", async () => {
     const first = runner.run("def normalize(iso, time_zone): ...", "2023-03-12");
     worker.emit({ id: worker.posted[0]!.id, ok: true, value: "a", durationMs: 1 });
