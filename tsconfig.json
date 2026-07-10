@@ -17,5 +17,5 @@
     "types": ["vite/client", "vitest/globals"]
   },
   "include": ["src", "test", "vite.config.ts", "vitest.config.ts"],
-  "exclude": ["src/sandbox/jsWorker.ts"]
+  "exclude": ["src/sandbox/jsWorker.ts", "src/sandbox/pyWorker.ts"]
 }

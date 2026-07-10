@@ -11,5 +11,5 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["src/sandbox/jsWorker.ts"]
+  "include": ["src/sandbox/jsWorker.ts", "src/sandbox/pyWorker.ts"]
 }
