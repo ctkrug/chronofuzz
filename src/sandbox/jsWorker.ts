@@ -1,8 +1,11 @@
 /// <reference lib="webworker" />
 import type { RunRequest, RunResult } from "./types";
 import { evaluateSource } from "./evalCore";
+import { lockdownNetworkGlobals } from "./networkLockdown";
 
 declare const self: DedicatedWorkerGlobalScope;
+
+lockdownNetworkGlobals(self as unknown as Record<string, unknown>);
 
 self.onmessage = (event: MessageEvent<RunRequest>) => {
   const { id, source, isoInput, timeZone } = event.data;
