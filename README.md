@@ -25,8 +25,9 @@ lets you point your function at it in seconds.
    expression, `fn(isoInput, timeZone)`; Python's is a `def normalize(iso, time_zone):`. Each
    language is pre-filled with its own naive passthrough sample, so you can hit run immediately
    and watch it break.
-2. Chronofuzz executes it once per landmine, in an isolated sandbox, with no access to the DOM or
-   the host page's state (network lockdown via CSP is tracked in the backlog):
+2. Chronofuzz executes it once per landmine, in an isolated sandbox, with no access to the DOM,
+   the host page's state, or the network (the JS sandbox blocks `fetch`/`XMLHttpRequest`/
+   `WebSocket` at the worker level, backed by a scoped Content-Security-Policy):
    - **JavaScript** runs in a fresh dedicated Web Worker per landmine, so a hang can be killed by
      terminating the worker without corrupting later runs.
    - **Python** runs via [Pyodide](https://pyodide.org) (CPython on WebAssembly) in one
@@ -44,9 +45,10 @@ Everything runs client-side. No code you paste is ever sent to a server.
 
 ## Status
 
-The core diagnosis loop and Python support are built — both languages run against the full
-corpus with graded verdicts. See [`docs/VISION.md`](docs/VISION.md) for the full plan and
-[`docs/BACKLOG.md`](docs/BACKLOG.md) for what's built vs. planned.
+The full v1 backlog is built: both languages run the full corpus with graded verdicts, results
+export to JSON, a run is shareable via a permalink, and a landing page (`site/`) states the wow
+moment and links into the workbench. See [`docs/VISION.md`](docs/VISION.md) for the product
+vision and [`docs/BACKLOG.md`](docs/BACKLOG.md) for the full story-by-story history.
 
 ## Stack
 
