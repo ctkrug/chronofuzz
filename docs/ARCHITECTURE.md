@@ -91,6 +91,14 @@ engine and `sandboxProbeRunner` never need to know which language they're drivin
   expected/note per landmine, plus the corpus version and export timestamp). Version and
   timestamp are parameters, not read internally, so the function stays deterministic to test.
 
+### Share — `src/share/`
+
+- `permalink.ts` — `encodeShareHash({language, source})` / `decodeShareHash(hash)` round-trip a
+  paste through a `#lang=&src=` URL hash fragment (never sent to a server, so a shared link stays
+  fully client-side). `encodeShareHash` throws `ShareSourceTooLargeError` past
+  `MAX_SHARE_SOURCE_LENGTH` (6,000 chars) rather than silently truncating; `decodeShareHash`
+  returns `null` for anything that isn't a well-formed share link, so a plain visit is a no-op.
+
 ### Pyodide — `src/pyodide/`
 
 - `loader.ts` — `loadPyodideRuntime(importModule?)` lazily `import()`s Pyodide's ESM CDN build on
@@ -117,12 +125,21 @@ engine and `sandboxProbeRunner` never need to know which language they're drivin
 - The Export button is disabled until a run completes (and re-disabled on a new run or language
   switch); clicking it calls `buildExport` and hands the JSON to an injectable `downloadFile` — a
   real Blob/anchor download in production, a spy in tests.
-- `mountApp(root, options)` accepts optional `runners` and `downloadFile` overrides so tests can
-  drive a full run (and export) end-to-end with a fake `SandboxRunner` instead of a real Worker;
-  production never passes these, so it always gets the real runners and a real download.
+- The Share button encodes the current paste + language via `encodeShareHash` and writes it
+  through an injectable `locationHash` seam (`read`/`write`/`buildUrl`); a source over the size
+  limit shows `ShareSourceTooLargeError`'s message in `#share-status` instead of writing the
+  hash. On mount, `decodeShareHash(locationHash.read())` restores a matching paste/language and
+  calls the same `triggerRun` the Run button uses, so opening a shared link reproduces the result
+  with no extra clicks.
+- `mountApp(root, options)` accepts optional `runners`, `downloadFile`, and `locationHash`
+  overrides so tests can drive a full run (export, share) end-to-end with fakes instead of a real
+  Worker or real `window.location` navigation; production never passes these, so it always gets
+  the real runners, a real download, and real navigation.
 
 Entry point `src/main.ts` mounts the app into `#app` (`index.html`). Styling and design tokens
-live in `src/style.css` (see `docs/DESIGN.md`).
+live in `src/style.css` (see `docs/DESIGN.md`). The `Language` type (`"javascript" | "python"`)
+lives in `src/language.ts` so both `ui/app.ts` and `share/permalink.ts` can import it without a
+circular dependency.
 
 ## Run / test / build
 
