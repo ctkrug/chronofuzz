@@ -122,9 +122,43 @@ body {
 }
 
 .editor-pane label {
+  display: block;
   font-size: 0.85rem;
   color: var(--text-muted);
   margin-bottom: var(--space-2);
+}
+
+.language-toggle {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: var(--space-1);
+  padding: 3px;
+  margin-bottom: var(--space-3);
+  background: var(--surface-2);
+  border: 1px solid rgba(56, 189, 248, 0.15);
+  border-radius: var(--radius);
+}
+
+.lang-button {
+  background: transparent;
+  color: var(--text-muted);
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.82rem;
+  box-shadow: none;
+}
+
+.lang-button:hover:not(:disabled) {
+  background: rgba(56, 189, 248, 0.12);
+  color: var(--text);
+}
+
+.lang-button.is-active {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.lang-button.is-active:hover:not(:disabled) {
+  background: #63cffb;
 }
 
 #source-input {
