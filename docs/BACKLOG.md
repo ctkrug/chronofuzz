@@ -116,8 +116,12 @@ land before anything else — see `docs/VISION.md`.
     any of the 20 landmines; the buggy one fails exactly the 12 where its bug class applies, and
     is asserted not to regress the corpus's paired control/ambiguous cases.
 
-- [ ] **4.3 Accessibility pass.**
+- [x] **4.3 Accessibility pass.**
   - All interactive elements are reachable and operable via keyboard alone (sane tab order, no
-    keyboard traps).
+    keyboard traps). `test/a11y.test.ts` asserts no control uses `tabindex="-1"` or a positive
+    tabindex, so every button/textarea/link stays in natural DOM tab order; native elements
+    (`<button>`, `<textarea>`, `<details>/<summary>`) supply keyboard operability for free.
   - An automated accessibility check (e.g. axe) run in CI, or a documented manual check, finds
-    zero critical violations.
+    zero critical violations. `axe-core` (new devDependency) runs against the mounted workbench
+    in its default, completed-run, and share-error states via `npm test` — zero violations in
+    all three, part of the same CI-run suite as everything else.
