@@ -8,6 +8,15 @@
       name="description"
       content="Paste a JS or Python date-handling function and run it against a curated battery of real date/time landmines: DST fallback, leap days, the 2038 rollover, and more."
     />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:title"
+      content="Chronofuzz — find the exact line where your date code breaks"
+    />
+    <meta
+      property="og:description"
+      content="Paste a JS or Python date-handling function and run it against a curated battery of real date/time landmines: DST fallback, leap days, the 2038 rollover, and more."
+    />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="../src/style.css" />
     <link rel="stylesheet" href="./site.css" />
@@ -28,8 +37,8 @@
           <h1>Your date code has a landmine in it. Chronofuzz shows you exactly where.</h1>
           <p class="hero-lead">
             Paste a JavaScript or Python date-handling function and run it against a curated,
-            research-backed battery of real date/time failure modes — DST spring-forward gaps,
-            impossible leap days, the Year&nbsp;2038 rollover, leap seconds. Hit run and get an
+            research-backed battery of real date/time failure modes like DST spring-forward gaps,
+            impossible leap days, the Year&nbsp;2038 rollover, and leap seconds. Hit run and get an
             immediate, specific diagnosis: which landmine broke, and the exact wrong value your
             function returned.
           </p>
@@ -54,9 +63,9 @@
               <span class="io-label">returned</span><code>2023-03-12T02:30:00.000Z</code>
             </div>
             <p class="result-note">
-              2:30 AM never occurred on this date in this zone — clocks jumped from 1:59:59 to
-              3:00:00. A correct implementation should reject the input or normalize it forward to
-              3:30 AM EDT (07:30 UTC), not accept a wall-clock time that never existed.
+              2:30 AM never occurred on this date in this zone. Clocks jumped from 1:59:59 to
+              3:00:00, so a correct implementation should reject the input or normalize it forward
+              to 3:30 AM EDT (07:30 UTC), not accept a wall-clock time that never existed.
             </p>
           </div>
         </div>
@@ -80,9 +89,9 @@
             <div>
               <h3>Run the battery</h3>
               <p>
-                Your function runs once per landmine in an isolated sandbox &mdash; a fresh Web
-                Worker per run for JavaScript, Pyodide for Python &mdash; with no network access and
-                no access to the host page.
+                Your function runs once per landmine in an isolated sandbox (a fresh Web Worker per
+                run for JavaScript, Pyodide for Python) with no network access and no access to the
+                host page.
               </p>
             </div>
           </li>
@@ -92,8 +101,8 @@
               <h3>Read the verdict</h3>
               <p>
                 Every landmine gets a real pass, fail, or ambiguous verdict from an automated
-                evaluator &mdash; never a raw dump for you to eyeball. Failing rows show the wrong
-                value inline, with a diff against what a correct implementation returns.
+                evaluator, never a raw dump for you to eyeball. Failing rows show the wrong value
+                inline, with a diff against what a correct implementation returns.
               </p>
             </div>
           </li>
@@ -103,8 +112,8 @@
       <section class="corpus-overview">
         <h2>Six categories, one battery</h2>
         <p class="corpus-overview-lead">
-          Every run checks your function against every real-world failure mode below &mdash; no
-          timezone database lookups, no remembering which years are leap years.
+          Every run checks your function against every real-world failure mode below: no timezone
+          database lookups, no remembering which years are leap years.
         </p>
         <ul class="category-chip-list">
           <li class="category-chip"><span>DST</span><span class="category-chip-count">3</span></li>
@@ -135,6 +144,8 @@
       <a href="https://github.com/ctkrug/chronofuzz">Source on GitHub</a>
       <span aria-hidden="true">&middot;</span>
       <span>MIT licensed</span>
+      <span aria-hidden="true">&middot;</span>
+      <a href="https://apps.charliekrug.com">More by Charlie Krug</a>
     </footer>
   </body>
 </html>
