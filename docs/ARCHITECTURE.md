@@ -7,25 +7,37 @@ verdict with the wrong value shown inline. No backend — everything runs in the
 ## Data flow
 
 ```
-paste source ─▶ UI (ui/app.ts)
+paste source ─▶ UI (ui/app.ts)  ── language toggle picks the runner
                   │  for each landmine:
                   ▼
             eval/engine.ts  evaluateLandmine(landmine, runProbe)
                   │            └─ getEvaluator(landmine)  (eval/evaluators.ts)
                   │                 └─ probes[] + grade()  (eval/strategies.ts)
                   ▼
-            runProbe = jsProbeRunner (sandbox/probeRunner.ts)
+            runProbe = sandboxProbeRunner(runner, source)  (sandbox/probeRunner.ts)
                   │
-                  ▼
-            JsSandboxRunner (sandbox/runner.ts) ── fresh Web Worker per probe
-                  │                                    (sandbox/jsWorker.ts)
-                  ▼                                       └─ evaluateSource (sandbox/evalCore.ts)
-            ProbeOutcome ─▶ grade() ─▶ Verdict ─▶ renderVerdictRow ─▶ result row
+        ┌─────────┴─────────┐
+        ▼                   ▼
+  JsSandboxRunner      PySandboxRunner (sandbox/pySandboxRunner.ts)
+  (sandbox/runner.ts)  ── one persistent Web Worker, reused across calls
+  ── fresh Worker           (sandbox/pyWorker.ts)
+     per probe                 └─ loadPyodideRuntime() (pyodide/loader.ts, lazy CDN import)
+     (sandbox/jsWorker.ts)     └─ evaluatePySource (sandbox/pyEvalCore.ts)
+        └─ evaluateSource
+           (sandbox/evalCore.ts)
+        └───────────┬───────┘
+                     ▼
+            RunResult ─▶ ProbeOutcome ─▶ grade() ─▶ Verdict ─▶ renderVerdictRow ─▶ result row
 ```
 
-Each probe runs in a **fresh Web Worker** so an infinite loop or hang in pasted code can be
-killed (`worker.terminate()` on timeout) without corrupting later runs. Probes run sequentially
-to bound peak memory.
+The JS path spins up a **fresh Web Worker per probe** — cheap, so an infinite loop or hang can be
+killed (`worker.terminate()` on timeout) without corrupting later runs. The Python path instead
+reuses **one persistent Worker across a whole run**, because Pyodide's WASM load is too expensive
+to pay per-landmine; a hang still gets killed via `terminate()`, which also drops the loaded
+runtime, so the next call respawns and reloads Pyodide. Probes run sequentially in both paths to
+bound peak memory. Both runners implement the same `SandboxRunner` interface
+(`run(source, isoInput, timeZone) → Promise<RunResult>`, `sandbox/types.ts`), so the grading
+engine and `sandboxProbeRunner` never need to know which language they're driving.
 
 ## Modules
 
@@ -53,22 +65,42 @@ to bound peak memory.
 
 ### Sandbox — `src/sandbox/`
 
-- `types.ts` — `JsRunRequest` (id, source, isoInput, optional `timeZone`), `JsRunResult`.
-- `evalCore.ts` — worker-free `evaluateSource(source, isoInput, timeZone)` + `toDisplayValue`.
-  Shared by the worker and the Node tests so run semantics are identical.
-- `jsWorker.ts` — the Web Worker; owns message plumbing + timing, delegates to `evalCore`.
+- `types.ts` — `RunRequest` (id, source, isoInput, optional `timeZone`), `RunResult`; the
+  language-agnostic wire shape both workers use. `SandboxRunner` — the `run()` interface both
+  `JsSandboxRunner` and `PySandboxRunner` implement.
+- `evalCore.ts` — worker-free `evaluateSource(source, isoInput, timeZone)` + `toDisplayValue` for
+  JS. Shared by `jsWorker` and the Node tests so run semantics are identical.
+- `jsWorker.ts` — the JS Web Worker; owns message plumbing + timing, delegates to `evalCore`.
 - `runner.ts` — `JsSandboxRunner`: spawns a fresh worker per `run()`, enforces a timeout.
-- `probeRunner.ts` — `jsProbeRunner(runner, source)` adapts the runner to the engine's
-  `ProbeRunner`.
+- `pyEvalCore.ts` — worker-free `evaluatePySource(pyodide, source, isoInput, timeZone)`: execs
+  the pasted source, looks up its `normalize` function, calls it, normalizes both a return value
+  and a raised exception into a designed `PyEvalResult`. Tested against a fake `PyodideRuntime`
+  so it doesn't need the real WASM runtime.
+- `pyWorker.ts` — the Python Web Worker; lazily loads Pyodide on its first message (once per
+  worker lifetime, not per landmine), then delegates to `pyEvalCore`.
+- `pySandboxRunner.ts` — `PySandboxRunner`: reuses one worker across calls (see data-flow note
+  above), `terminate()`s it on timeout or external cancellation, and respawns lazily on the next
+  `run()`. Takes an injectable `WorkerFactory` for testability.
+- `probeRunner.ts` — `sandboxProbeRunner(runner, source)` adapts either `SandboxRunner` to the
+  engine's `ProbeRunner`.
 
 ### Pyodide — `src/pyodide/`
 
-- `loader.ts` — `loadPyodideRuntime()` lazily loads Pyodide from a CDN on first use (Epic 2, not
-  yet wired to execution).
+- `loader.ts` — `loadPyodideRuntime(importModule?)` lazily `import()`s Pyodide's ESM CDN build on
+  first use and caches the result. Dynamic `import()` (not a `<script>` tag) so the same loader
+  works from both the main thread and a module Worker — `pyWorker.ts` calls it directly. The
+  importer is injectable so tests supply a fake module instead of hitting the CDN.
 
 ### UI — `src/ui/app.ts`
 
-- `mountApp(root)` builds the workbench (editor + results panes) and wires the run button.
+- `mountApp(root)` builds the workbench (language toggle + editor + results panes) and wires the
+  toggle and run buttons. Each language keeps its own edit buffer so switching back and forth
+  doesn't lose in-progress edits.
+- A `runGeneration` counter is bumped on every new run and every language switch; `runBattery`
+  checks it after each `await` and stops touching the DOM the moment it goes stale, so a run
+  left in flight by a language switch can't overwrite results from a newer one. Switching away
+  from Python also calls `PySandboxRunner.terminate()` so no worker keeps running in the
+  background.
 - `runBattery` streams each landmine's verdict into the list and tallies the summary.
 - `renderVerdictRow(landmine, verdict)` builds one row: badge, animated red strike on failures,
   the returned value inline, a collapsible actual-vs-expected diff for failures, and the note.
