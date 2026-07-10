@@ -37,7 +37,14 @@ const VERDICT_LABEL: Record<VerdictKind, string> = {
   ambiguous: "AMBIGUOUS",
 };
 
-export function mountApp(root: HTMLElement): void {
+export interface MountAppOptions {
+  /** Overrides the sandbox runner for a language — tests inject a fake runner
+   * that resolves without spawning a real Worker; the app itself never passes
+   * this, so production always gets the real Js/PySandboxRunner. */
+  runners?: Partial<Record<Language, SandboxRunner>>;
+}
+
+export function mountApp(root: HTMLElement, options: MountAppOptions = {}): void {
   root.innerHTML = "";
 
   const header = document.createElement("header");
@@ -103,9 +110,11 @@ export function mountApp(root: HTMLElement): void {
   let currentLanguage: Language = "javascript";
   textarea.value = sources[currentLanguage];
 
-  const jsRunner = new JsSandboxRunner();
-  const pyRunner = new PySandboxRunner();
-  const runners: Record<Language, SandboxRunner> = { javascript: jsRunner, python: pyRunner };
+  const pyRunner = options.runners?.python ?? new PySandboxRunner();
+  const runners: Record<Language, SandboxRunner> = {
+    javascript: options.runners?.javascript ?? new JsSandboxRunner(),
+    python: pyRunner,
+  };
 
   // Bumped on every new run and on every language switch; runBattery checks
   // it after each await and stops touching the DOM the moment it goes stale,
@@ -126,7 +135,7 @@ export function mountApp(root: HTMLElement): void {
     if (language === currentLanguage) return;
     runGeneration += 1;
     if (currentLanguage === "python") {
-      pyRunner.terminate();
+      pyRunner.terminate?.();
     }
     currentLanguage = language;
     textarea.value = sources[language];
