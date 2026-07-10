@@ -15,7 +15,11 @@ export type RunResult =
   | { id: string; ok: true; value: string; durationMs: number }
   | { id: string; ok: false; error: string; durationMs: number };
 
-/** What jsProbeRunner/pyProbeRunner need from a language's sandbox runner. */
+/** What sandboxProbeRunner (and the UI) need from a language's sandbox runner. */
 export interface SandboxRunner {
   run(source: string, isoInput: string, timeZone?: string): Promise<RunResult>;
+  /** Cancels any in-flight/backing work, if the runner holds any. JS's
+   * fresh-worker-per-call has nothing to cancel; Python's persistent worker
+   * does — optional so runners without state don't need a no-op stub. */
+  terminate?(): void;
 }
