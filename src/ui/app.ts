@@ -9,6 +9,7 @@ import { sandboxProbeRunner } from "../sandbox/probeRunner";
 import type { SandboxRunner } from "../sandbox/types";
 import { buildExport } from "../export/exportResults";
 import type { Language } from "../language";
+import { decodeShareHash, encodeShareHash, ShareSourceTooLargeError } from "../share/permalink";
 
 const JS_SAMPLE_SOURCE = `function normalize(iso, timeZone) {
   // Naive: trusts new Date and ignores the target zone.
@@ -46,6 +47,14 @@ export interface MountAppOptions {
   /** Overrides how the Export button delivers a file — tests inject a spy
    * instead of driving a real Blob download through happy-dom. */
   downloadFile?: (filename: string, content: string) => void;
+  /** Overrides how the Share button reads/writes the permalink hash and how
+   * the shareable URL is displayed — tests inject fakes instead of driving
+   * real navigation through happy-dom's window.location. */
+  locationHash?: {
+    read: () => string;
+    write: (hash: string) => void;
+    buildUrl: (hash: string) => string;
+  };
 }
 
 function defaultDownloadFile(filename: string, content: string): void {
@@ -82,7 +91,11 @@ export function mountApp(root: HTMLElement, options: MountAppOptions = {}): void
     </div>
     <label id="source-label" for="source-input">${LANGUAGE_META.javascript.labelHtml}</label>
     <textarea id="source-input" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
-    <button id="run-button" type="button">Run against the battery</button>
+    <div class="run-row">
+      <button id="run-button" type="button">Run against the battery</button>
+      <button id="share-button" type="button" class="share-button">Share</button>
+    </div>
+    <p id="share-status" class="share-status" role="status" aria-live="polite"></p>
   `;
 
   const resultsPane = document.createElement("section");
@@ -109,12 +122,16 @@ export function mountApp(root: HTMLElement, options: MountAppOptions = {}): void
   const sourceLabel = editorPane.querySelector<HTMLLabelElement>("#source-label");
   const textarea = editorPane.querySelector<HTMLTextAreaElement>("#source-input");
   const runButton = editorPane.querySelector<HTMLButtonElement>("#run-button");
+  const shareButton = editorPane.querySelector<HTMLButtonElement>("#share-button");
+  const shareStatus = editorPane.querySelector<HTMLParagraphElement>("#share-status");
   const resultsList = resultsPane.querySelector<HTMLOListElement>("#results-list");
   const summary = resultsPane.querySelector<HTMLParagraphElement>("#results-summary");
   const exportButton = resultsPane.querySelector<HTMLButtonElement>("#export-button");
   if (
     !textarea ||
     !runButton ||
+    !shareButton ||
+    !shareStatus ||
     !resultsList ||
     !summary ||
     !sourceLabel ||
@@ -157,13 +174,7 @@ export function mountApp(root: HTMLElement, options: MountAppOptions = {}): void
     sources[currentLanguage] = textarea.value;
   });
 
-  const setLanguage = (language: Language): void => {
-    if (language === currentLanguage) return;
-    runGeneration += 1;
-    if (currentLanguage === "python") {
-      pyRunner.terminate?.();
-    }
-    currentLanguage = language;
+  const applyLanguageUI = (language: Language): void => {
     textarea.value = sources[language];
     sourceLabel.innerHTML = LANGUAGE_META[language].labelHtml;
     for (const button of langButtons) {
@@ -171,6 +182,16 @@ export function mountApp(root: HTMLElement, options: MountAppOptions = {}): void
       button.classList.toggle("is-active", isActive);
       button.setAttribute("aria-pressed", String(isActive));
     }
+  };
+
+  const setLanguage = (language: Language): void => {
+    if (language === currentLanguage) return;
+    runGeneration += 1;
+    if (currentLanguage === "python") {
+      pyRunner.terminate?.();
+    }
+    currentLanguage = language;
+    applyLanguageUI(language);
     runButton.disabled = false;
     runButton.textContent = "Run against the battery";
     resetResultsPanel();
@@ -210,6 +231,38 @@ export function mountApp(root: HTMLElement, options: MountAppOptions = {}): void
     const exported = buildExport(lastResults, CORPUS_VERSION, new Date().toISOString());
     downloadFile(`chronofuzz-results-${CORPUS_VERSION}.json`, JSON.stringify(exported, null, 2));
   });
+
+  const locationHash = options.locationHash ?? {
+    read: () => window.location.hash,
+    write: (hash: string) => {
+      window.location.hash = hash;
+    },
+    buildUrl: () => window.location.href,
+  };
+
+  shareButton.addEventListener("click", () => {
+    sources[currentLanguage] = textarea.value;
+    let hash: string;
+    try {
+      hash = encodeShareHash({ language: currentLanguage, source: textarea.value });
+    } catch (error) {
+      shareStatus.textContent =
+        error instanceof ShareSourceTooLargeError ? error.message : "Could not build a share link.";
+      shareStatus.classList.add("share-status-error");
+      return;
+    }
+    shareStatus.classList.remove("share-status-error");
+    locationHash.write(hash);
+    shareStatus.textContent = `Link ready: ${locationHash.buildUrl(hash)}`;
+  });
+
+  const restored = decodeShareHash(locationHash.read());
+  if (restored) {
+    sources[restored.language] = restored.source;
+    currentLanguage = restored.language;
+    applyLanguageUI(restored.language);
+    triggerRun();
+  }
 }
 
 async function runBattery(
