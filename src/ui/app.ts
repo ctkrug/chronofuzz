@@ -8,8 +8,7 @@ import { PySandboxRunner } from "../sandbox/pySandboxRunner";
 import { sandboxProbeRunner } from "../sandbox/probeRunner";
 import type { SandboxRunner } from "../sandbox/types";
 import { buildExport } from "../export/exportResults";
-
-type Language = "javascript" | "python";
+import type { Language } from "../language";
 
 const JS_SAMPLE_SOURCE = `function normalize(iso, timeZone) {
   // Naive: trusts new Date and ignores the target zone.
