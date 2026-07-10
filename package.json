@@ -19,6 +19,7 @@
     "format:check": "prettier --check ."
   },
   "devDependencies": {
+    "axe-core": "^4.12.1",
     "eslint": "^9.39.4",
     "happy-dom": "^20.10.6",
     "prettier": "^3.9.5",
