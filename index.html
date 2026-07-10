@@ -3,10 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Chronofuzz — date-bug landmine tester</title>
+    <title>Chronofuzz — see exactly where your date code breaks</title>
     <meta
       name="description"
-      content="Paste a JS or Python date-handling function and run it against a curated battery of real date/time landmines."
+      content="Paste a JS or Python date function and run it against real DST, leap-day, epoch, and ISO-week landmines. See exactly which line breaks, right in the browser."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Chronofuzz — see exactly where your date code breaks" />
+    <meta
+      property="og:description"
+      content="Paste a JS or Python date function and run it against real DST, leap-day, epoch, and ISO-week landmines. See exactly which line breaks."
     />
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./src/style.css" />
@@ -27,6 +33,77 @@
   </head>
   <body>
     <div id="app"></div>
+
+    <section class="learn" aria-labelledby="learn-heading">
+      <h2 id="learn-heading">Why date bugs slip through review</h2>
+      <p>
+        Date and time handling produces some of the cheapest bugs to prevent and the most expensive
+        to find in production. They share three traits that beat ordinary testing: they are rare in
+        wall-clock time (a DST-fallback bug reproduces on one Sunday a year; the 2038 rollover
+        happens exactly once, ever), they need domain research to even write a test case (you have
+        to already know that 2:30 AM did not exist that day in that zone), and they are
+        timezone-dependent, so a bug that is invisible in a UTC CI run still bites a user in Los
+        Angeles. Almost nobody writes a DST test, not out of negligence, but because building the
+        fixture is its own research project. Chronofuzz does that research once and lets you point
+        your function at all of it in a single click.
+      </p>
+
+      <div class="faq">
+        <div class="faq-item">
+          <h3>How do I test a function for DST and timezone bugs?</h3>
+          <p>
+            Paste it into the workbench above and run the battery. Your function is called once per
+            landmine with an ISO string and a target IANA zone, including the US and Sydney
+            spring-forward gaps and the fall-back hour that happens twice. Each result is graded
+            pass, fail, or ambiguous, and failing rows show the exact wrong value next to what a
+            correct implementation returns.
+          </p>
+        </div>
+        <div class="faq-item">
+          <h3>What date edge cases should I test for?</h3>
+          <p>
+            The six categories Chronofuzz ships cover the common ones: DST transitions, leap days
+            (including the 1900 and 2000 century rules), leap seconds, the Unix epoch and the 2038
+            rollover, ambiguous parsing (bare date strings, slash dates, non-ISO separators), and
+            ISO week-year boundaries where January 1 can belong to the previous year.
+          </p>
+        </div>
+        <div class="faq-item">
+          <h3>Is the code I paste sent to a server?</h3>
+          <p>
+            No. Everything runs in your browser: JavaScript in a sandboxed Web Worker, Python
+            through Pyodide (CPython compiled to WebAssembly). The sandbox blocks network access,
+            and a shared permalink keeps your paste in the URL fragment, so even a shared link never
+            touches a server.
+          </p>
+        </div>
+        <div class="faq-item">
+          <h3>Which languages does Chronofuzz support?</h3>
+          <p>
+            JavaScript and Python. JavaScript functions are called as
+            <code>fn(isoInput, timeZone)</code>; Python functions are a
+            <code>def normalize(iso, time_zone):</code>. Toggle between them and each keeps its own
+            editor buffer.
+          </p>
+        </div>
+        <div class="faq-item">
+          <h3>What is the difference between a fail and an ambiguous result?</h3>
+          <p>
+            A fail means there is one correct answer and your function returned a different one,
+            like accepting Feb 29 in a non-leap year. Ambiguous means the input genuinely has no
+            single correct instant, like a fall-back hour or a locale-dependent slash date, and the
+            right behavior is to be explicit about the ambiguity rather than silently pick one.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <footer class="app-footer">
+      <a href="https://github.com/ctkrug/chronofuzz">Source on GitHub</a>
+      <span aria-hidden="true">·</span>
+      <a href="https://apps.charliekrug.com">More by Charlie Krug</a>
+    </footer>
+
     <script type="module" src="./src/main.ts"></script>
   </body>
 </html>
