@@ -1,41 +1,39 @@
 export interface PyodideRuntime {
   runPython(code: string): unknown;
+  globals: { get(name: string): unknown };
 }
 
-const PYODIDE_CDN_URL = "https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js";
+export type PyodideModule = {
+  loadPyodide: (config?: { indexURL?: string }) => Promise<PyodideRuntime>;
+};
 
-declare global {
-  interface Window {
-    loadPyodide?: (config?: { indexURL?: string }) => Promise<PyodideRuntime>;
-  }
-}
+export type PyodideModuleImporter = () => Promise<PyodideModule>;
+
+const PYODIDE_CDN_URL = "https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.mjs";
+
+const defaultImporter: PyodideModuleImporter = () => import(/* @vite-ignore */ PYODIDE_CDN_URL);
 
 let pyodideLoadPromise: Promise<PyodideRuntime> | null = null;
 
-function loadScript(src: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = src;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
-    document.head.appendChild(script);
-  });
-}
-
 /**
- * Lazily loads Pyodide from a CDN on first use so the base app bundle stays
- * small — sessions that only test JavaScript never pay this cost. Python
- * execution wiring (mirroring JsSandboxRunner) lands in BUILD; this loader is
- * the foundation it will call into.
+ * Lazily imports Pyodide's ESM build from a CDN on first use so sessions that
+ * only test JavaScript never pay the multi-megabyte WASM download. Uses
+ * dynamic `import()` of the ESM build (not a `<script>` tag) so the same
+ * loader works from both the main thread and a module Worker, neither of
+ * which the previous `document.createElement("script")` approach supported
+ * inside a Worker. The importer is injectable so tests can supply a fake
+ * module instead of hitting the real CDN.
  */
-export function loadPyodideRuntime(): Promise<PyodideRuntime> {
+export function loadPyodideRuntime(
+  importModule: PyodideModuleImporter = defaultImporter,
+): Promise<PyodideRuntime> {
   if (!pyodideLoadPromise) {
-    pyodideLoadPromise = loadScript(PYODIDE_CDN_URL).then(() => {
-      if (!window.loadPyodide) {
-        throw new Error("Pyodide script loaded but window.loadPyodide is unavailable.");
-      }
-      return window.loadPyodide();
-    });
+    pyodideLoadPromise = importModule().then((module) => module.loadPyodide());
   }
   return pyodideLoadPromise;
+}
+
+/** Test-only: clears the cached load promise so a fresh importer can be injected. */
+export function resetPyodideRuntimeCache(): void {
+  pyodideLoadPromise = null;
 }
