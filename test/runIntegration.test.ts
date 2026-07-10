@@ -58,6 +58,29 @@ describe("running the battery end-to-end (fake runner, no real Worker)", () => {
     );
   });
 
+  it("ignores a second click on the run button while a run is in flight", async () => {
+    const runner = new DeferredRunner();
+    const root = mount({ javascript: runner });
+    const runButton = root.querySelector<HTMLButtonElement>("#run-button")!;
+
+    runButton.click();
+    expect(runButton.disabled).toBe(true);
+    // A disabled button does not dispatch click activation behavior, so this
+    // rapid second click (double-click, key-mash) must be a no-op rather than
+    // starting a second concurrent run.
+    runButton.click();
+
+    while (runner.pendingCount > 0) {
+      runner.resolveNext("2000-01-01T00:00:00Z");
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+
+    await vi.waitFor(() => {
+      expect(root.querySelectorAll("#results-list .result-item").length).toBe(LANDMINES.length);
+    });
+    expect(runButton.disabled).toBe(false);
+  });
+
   it("stops appending rows once a language switch makes the run stale", async () => {
     const pyRunner = new DeferredRunner();
     const root = mount({ python: pyRunner });
