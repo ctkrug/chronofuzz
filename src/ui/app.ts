@@ -1,5 +1,5 @@
-import { LANDMINES, CORPUS_VERSION } from "../corpus";
-import type { Landmine } from "../corpus";
+import { LANDMINES, CORPUS_VERSION, landminesByCategory } from "../corpus";
+import type { Landmine, LandmineCategory } from "../corpus";
 import type { Verdict, VerdictKind } from "../eval/types";
 import { evaluateLandmine } from "../eval/engine";
 import type { LandmineResult } from "../eval/engine";
@@ -38,6 +38,33 @@ const VERDICT_LABEL: Record<VerdictKind, string> = {
   fail: "FAIL",
   ambiguous: "AMBIGUOUS",
 };
+
+const CATEGORY_LABEL: Record<LandmineCategory, string> = {
+  dst: "DST",
+  "leap-day": "Leap day",
+  "leap-second": "Leap second",
+  "epoch-boundary": "Epoch boundary",
+  parsing: "Parsing",
+  "iso-week": "ISO week",
+};
+
+/**
+ * A preview of the battery's category spread, shown before the first run so
+ * the results pane isn't a wall of empty space (design standard D2: empty
+ * states must be designed, not blank).
+ */
+function buildEmptyStateHtml(): string {
+  const chips = [...landminesByCategory()]
+    .map(
+      ([category, landmines]) =>
+        `<li class="category-chip"><span>${CATEGORY_LABEL[category]}</span><span class="category-chip-count">${landmines.length}</span></li>`,
+    )
+    .join("");
+  return `
+    <p class="empty-state-lead">Every run checks your function against every category below.</p>
+    <ul class="category-chip-list">${chips}</ul>
+  `;
+}
 
 export interface MountAppOptions {
   /** Overrides the sandbox runner for a language — tests inject a fake runner
@@ -112,6 +139,7 @@ export function mountApp(root: HTMLElement, options: MountAppOptions = {}): void
         ${LANDMINES.length} landmines armed. Hit run.
       </p>
     </div>
+    <div id="empty-state" class="empty-state">${buildEmptyStateHtml()}</div>
     <ol id="results-list" class="results-list" aria-live="polite"></ol>
   `;
 
@@ -125,6 +153,7 @@ export function mountApp(root: HTMLElement, options: MountAppOptions = {}): void
   const shareButton = editorPane.querySelector<HTMLButtonElement>("#share-button");
   const shareStatus = editorPane.querySelector<HTMLParagraphElement>("#share-status");
   const resultsList = resultsPane.querySelector<HTMLOListElement>("#results-list");
+  const emptyState = resultsPane.querySelector<HTMLDivElement>("#empty-state");
   const summary = resultsPane.querySelector<HTMLParagraphElement>("#results-summary");
   const exportButton = resultsPane.querySelector<HTMLButtonElement>("#export-button");
   if (
@@ -133,6 +162,7 @@ export function mountApp(root: HTMLElement, options: MountAppOptions = {}): void
     !shareButton ||
     !shareStatus ||
     !resultsList ||
+    !emptyState ||
     !summary ||
     !sourceLabel ||
     !exportButton ||
@@ -166,6 +196,7 @@ export function mountApp(root: HTMLElement, options: MountAppOptions = {}): void
   const resetResultsPanel = (): void => {
     resultsList.innerHTML = "";
     summary.textContent = `${LANDMINES.length} landmines armed. Hit run.`;
+    emptyState.hidden = false;
     lastResults = null;
     exportButton.disabled = true;
   };
@@ -214,6 +245,7 @@ export function mountApp(root: HTMLElement, options: MountAppOptions = {}): void
       textarea.value,
       runButton,
       resultsList,
+      emptyState,
       summary,
       runners[currentLanguage],
       () => generation === runGeneration,
@@ -269,6 +301,7 @@ async function runBattery(
   source: string,
   runButton: HTMLButtonElement,
   resultsList: HTMLOListElement,
+  emptyState: HTMLDivElement,
   summary: HTMLParagraphElement,
   runner: SandboxRunner,
   isCurrentRun: () => boolean,
@@ -277,6 +310,7 @@ async function runBattery(
   runButton.disabled = true;
   runButton.textContent = "Running…";
   resultsList.innerHTML = "";
+  emptyState.hidden = true;
   summary.textContent = `Running ${LANDMINES.length} landmines…`;
 
   const runProbe = sandboxProbeRunner(runner, source);
