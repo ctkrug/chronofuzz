@@ -84,6 +84,13 @@ engine and `sandboxProbeRunner` never need to know which language they're drivin
 - `probeRunner.ts` — `sandboxProbeRunner(runner, source)` adapts either `SandboxRunner` to the
   engine's `ProbeRunner`.
 
+### Export — `src/export/`
+
+- `exportResults.ts` — `buildExport(results, corpusVersion, exportedAt)`: pure mapping from a
+  completed run's `LandmineResult[]` to a JSON-serializable `ExportedRun` (id/verdict/actual/
+  expected/note per landmine, plus the corpus version and export timestamp). Version and
+  timestamp are parameters, not read internally, so the function stays deterministic to test.
+
 ### Pyodide — `src/pyodide/`
 
 - `loader.ts` — `loadPyodideRuntime(importModule?)` lazily `import()`s Pyodide's ESM CDN build on
@@ -101,10 +108,18 @@ engine and `sandboxProbeRunner` never need to know which language they're drivin
   left in flight by a language switch can't overwrite results from a newer one. Switching away
   from Python also calls `PySandboxRunner.terminate()` so no worker keeps running in the
   background.
-- `runBattery` streams each landmine's verdict into the list and tallies the summary.
+- `runBattery` streams each landmine's verdict into the list, tallies the summary, and — once the
+  full battery completes for the current generation — hands the accumulated `LandmineResult[]` to
+  an `onComplete` callback that enables the Export button.
 - `renderVerdictRow(landmine, verdict)` builds one row: badge, animated red strike on failures,
   the returned value inline, a collapsible actual-vs-expected diff for failures, and the note.
   All untrusted output is escaped.
+- The Export button is disabled until a run completes (and re-disabled on a new run or language
+  switch); clicking it calls `buildExport` and hands the JSON to an injectable `downloadFile` — a
+  real Blob/anchor download in production, a spy in tests.
+- `mountApp(root, options)` accepts optional `runners` and `downloadFile` overrides so tests can
+  drive a full run (and export) end-to-end with a fake `SandboxRunner` instead of a real Worker;
+  production never passes these, so it always gets the real runners and a real download.
 
 Entry point `src/main.ts` mounts the app into `#app` (`index.html`). Styling and design tokens
 live in `src/style.css` (see `docs/DESIGN.md`).
