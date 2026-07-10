@@ -10,6 +10,20 @@
     />
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./src/style.css" />
+    <!--
+      connect-src is deliberately narrow: 'self' plus the Pyodide CDN, nothing
+      else. script-src needs 'unsafe-eval'/'wasm-unsafe-eval' because the
+      product's whole mechanic is compiling pasted source via `new Function`
+      and running Pyodide's WASM — that can't be locked down at the CSP layer
+      without breaking the app, so the JS sandbox instead blocks
+      fetch/XMLHttpRequest/WebSocket at runtime (src/sandbox/networkLockdown.ts).
+      This CSP is defense-in-depth on top of that, and the real backstop for
+      the Python path, which has no equivalent runtime lockdown.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; worker-src 'self' blob:; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://cdn.jsdelivr.net; img-src 'self'; object-src 'none'; base-uri 'self'"
+    />
   </head>
   <body>
     <div id="app"></div>
