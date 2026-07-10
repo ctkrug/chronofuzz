@@ -139,18 +139,20 @@ describe("corpus regression: correct vs. buggy reference implementations (story 
     const verdicts = await verdictsFor(runCorrect);
     expect(verdicts.size).toBe(LANDMINES.length);
     for (const [id, verdict] of verdicts) {
-      expect(verdict.kind, `landmine "${id}" should not fail against a correct implementation`).not.toBe(
-        "fail",
-      );
+      expect(
+        verdict.kind,
+        `landmine "${id}" should not fail against a correct implementation`,
+      ).not.toBe("fail");
     }
   });
 
   it("the buggy implementation fails every landmine with a known classic bug", async () => {
     const verdicts = await verdictsFor(runBuggy);
     for (const id of BUGGY_SHOULD_FAIL) {
-      expect(verdicts.get(id)?.kind, `landmine "${id}" should fail against the buggy implementation`).toBe(
-        "fail",
-      );
+      expect(
+        verdicts.get(id)?.kind,
+        `landmine "${id}" should fail against the buggy implementation`,
+      ).toBe("fail");
     }
   });
 

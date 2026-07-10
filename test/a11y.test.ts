@@ -58,9 +58,10 @@ describe("accessibility: keyboard reachability (story 4.3)", () => {
     expect(controls.length).toBeGreaterThan(0);
     for (const el of controls) {
       const tabindex = el.getAttribute("tabindex");
-      expect(tabindex, `${el.tagName}#${el.id || el.className} should not opt out of tab order`).not.toBe(
-        "-1",
-      );
+      expect(
+        tabindex,
+        `${el.tagName}#${el.id || el.className} should not opt out of tab order`,
+      ).not.toBe("-1");
       expect(el.tabIndex).toBeGreaterThanOrEqual(0);
     }
   });

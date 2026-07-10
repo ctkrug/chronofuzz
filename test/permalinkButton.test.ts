@@ -24,7 +24,9 @@ function fakeLocationHash(initial = "") {
 
 function mount(
   locationHash: ReturnType<typeof fakeLocationHash>,
-  runners: { javascript?: SandboxRunner; python?: SandboxRunner } = { javascript: new InstantRunner() },
+  runners: { javascript?: SandboxRunner; python?: SandboxRunner } = {
+    javascript: new InstantRunner(),
+  },
 ): HTMLElement {
   document.body.innerHTML = '<div id="app"></div>';
   const root = document.getElementById("app");

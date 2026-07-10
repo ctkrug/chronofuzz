@@ -8,13 +8,19 @@ import {
 
 describe("encodeShareHash / decodeShareHash", () => {
   it("round-trips a JavaScript paste", () => {
-    const state = { language: "javascript" as const, source: "function normalize(iso) {\n  return iso;\n}" };
+    const state = {
+      language: "javascript" as const,
+      source: "function normalize(iso) {\n  return iso;\n}",
+    };
     const decoded = decodeShareHash(encodeShareHash(state));
     expect(decoded).toEqual(state);
   });
 
   it("round-trips a Python paste", () => {
-    const state = { language: "python" as const, source: "def normalize(iso, time_zone):\n    return iso" };
+    const state = {
+      language: "python" as const,
+      source: "def normalize(iso, time_zone):\n    return iso",
+    };
     const decoded = decodeShareHash(encodeShareHash(state));
     expect(decoded).toEqual(state);
   });
@@ -34,7 +40,9 @@ describe("encodeShareHash / decodeShareHash", () => {
 
   it("throws ShareSourceTooLargeError for source beyond the size limit", () => {
     const source = "a".repeat(MAX_SHARE_SOURCE_LENGTH + 1);
-    expect(() => encodeShareHash({ language: "javascript", source })).toThrow(ShareSourceTooLargeError);
+    expect(() => encodeShareHash({ language: "javascript", source })).toThrow(
+      ShareSourceTooLargeError,
+    );
   });
 
   it("accepts source exactly at the size limit", () => {

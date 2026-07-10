@@ -101,7 +101,7 @@ land before anything else — see `docs/VISION.md`.
 - [x] **4.1 Network lockdown for the JS sandbox.**
   - The JS Worker is constrained (CSP and/or sandboxed-iframe boundary) so pasted code cannot
     call `fetch`/`XMLHttpRequest`/`WebSocket`. `lockdownNetworkGlobals` (`src/sandbox/
-    networkLockdown.ts`) overrides those three globals in the worker's own scope before it
+networkLockdown.ts`) overrides those three globals in the worker's own scope before it
     accepts any message, so a pasted call throws `NetworkAccessBlockedError` instead of
     succeeding; a scoped `Content-Security-Policy` meta tag (`index.html`) adds defense-in-depth
     and is the real backstop for the Python/Pyodide path, which has no equivalent runtime
