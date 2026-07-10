@@ -81,7 +81,10 @@ engine and `sandboxProbeRunner` never need to know which language they're drivin
   worker lifetime, not per landmine), then delegates to `pyEvalCore`.
 - `pySandboxRunner.ts` — `PySandboxRunner`: reuses one worker across calls (see data-flow note
   above), `terminate()`s it on timeout or external cancellation, and respawns lazily on the next
-  `run()`. Takes an injectable `WorkerFactory` for testability.
+  `run()`. `terminate()` also immediately settles any in-flight `run()` promise (rather than
+  leaving it to hang until its own timeout fires against an already-dead worker), honoring
+  `SandboxRunner.terminate()`'s "cancels any in-flight work" contract. Takes an injectable
+  `WorkerFactory` for testability.
 - `probeRunner.ts` — `sandboxProbeRunner(runner, source)` adapts either `SandboxRunner` to the
   engine's `ProbeRunner`.
 - `networkLockdown.ts` — `lockdownNetworkGlobals(scope)` overrides `fetch`/`XMLHttpRequest`/
