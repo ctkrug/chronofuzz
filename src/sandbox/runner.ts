@@ -9,19 +9,25 @@ export class JsSandboxTimeoutError extends Error {
   }
 }
 
+export type WorkerFactory = () => Worker;
+
+const defaultWorkerFactory: WorkerFactory = () =>
+  new Worker(new URL("./jsWorker.ts", import.meta.url), { type: "module" });
+
 /**
  * Runs pasted JavaScript in a fresh Web Worker per call. A fresh worker (rather
  * than a reused one) means a hung/infinite-looping function can be discarded
  * by terminating its worker without corrupting shared state for later runs.
  */
 export class JsSandboxRunner {
-  constructor(private readonly timeoutMs = DEFAULT_TIMEOUT_MS) {}
+  constructor(
+    private readonly timeoutMs = DEFAULT_TIMEOUT_MS,
+    private readonly createWorker: WorkerFactory = defaultWorkerFactory,
+  ) {}
 
   run(source: string, isoInput: string, timeZone?: string): Promise<RunResult> {
     const id = crypto.randomUUID();
-    const worker = new Worker(new URL("./jsWorker.ts", import.meta.url), {
-      type: "module",
-    });
+    const worker = this.createWorker();
 
     return new Promise<RunResult>((resolve) => {
       const timeout = setTimeout(() => {
