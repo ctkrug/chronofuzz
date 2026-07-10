@@ -62,9 +62,10 @@ vision and [`docs/BACKLOG.md`](docs/BACKLOG.md) for the full story-by-story hist
 
 ```sh
 npm install
-npm run dev      # local dev server
-npm test         # run the test suite
-npm run build    # production build to dist/
+npm run dev             # local dev server
+npm test                # run the test suite
+npm run test:coverage   # run the suite with a coverage report and threshold gate
+npm run build           # production build to dist/
 ```
 
 ## License
