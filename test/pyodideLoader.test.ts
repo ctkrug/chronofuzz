@@ -44,6 +44,29 @@ describe("loadPyodideRuntime", () => {
     expect(importCount).toBe(1);
   });
 
+  it("retries the import on the next call after a failed load, instead of caching the rejection forever", async () => {
+    const runtime: PyodideRuntime = {
+      runPython: () => undefined,
+      globals: { get: () => undefined },
+    };
+    let attempt = 0;
+    const importModule = () => {
+      attempt += 1;
+      return attempt === 1
+        ? Promise.reject(new Error("network error"))
+        : Promise.resolve(fakeModule(runtime));
+    };
+
+    await expect(loadPyodideRuntime(importModule)).rejects.toThrow("network error");
+    // A transient failure (e.g. a CDN blip) must not permanently wedge Python
+    // mode for the rest of the session — the next call should retry, not
+    // replay the same cached rejection.
+    const result = await loadPyodideRuntime(importModule);
+
+    expect(result).toBe(runtime);
+    expect(attempt).toBe(2);
+  });
+
   it("reloads after resetPyodideRuntimeCache", async () => {
     const runtimeA: PyodideRuntime = {
       runPython: () => undefined,
