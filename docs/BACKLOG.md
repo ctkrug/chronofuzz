@@ -59,11 +59,16 @@ land before anything else — see `docs/VISION.md`.
 
 ## Epic 3 — Product polish and shareability
 
-- [ ] **3.1 Shareable permalink for a paste and its results.**
+- [x] **3.1 Shareable permalink for a paste and its results.**
   - Clicking "Share" produces a URL that, when opened fresh, restores the same pasted source
-    and automatically re-runs the battery.
+    and automatically re-runs the battery. `encodeShareHash`/`decodeShareHash`
+    (`src/share/permalink.ts`) round-trip `{language, source}` through a `#lang=&src=` URL hash
+    (client-side only, never sent to a server); `mountApp` decodes it on mount and calls the same
+    `triggerRun` the Run button uses.
   - Pasting source beyond a defined size limit shows a clear inline error instead of silently
-    truncating or producing a broken link.
+    truncating or producing a broken link. `MAX_SHARE_SOURCE_LENGTH` (6,000 chars) is enforced by
+    `encodeShareHash`, which throws `ShareSourceTooLargeError`; the Share button catches it and
+    renders the message in `#share-status` without writing the hash.
 
 - [x] **3.2 Export results as JSON.**
   - An "Export" action downloads a file containing every landmine's id, verdict, actual value,
