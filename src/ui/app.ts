@@ -3,7 +3,7 @@ import type { Landmine } from "../corpus";
 import type { Verdict, VerdictKind } from "../eval/types";
 import { evaluateLandmine } from "../eval/engine";
 import { JsSandboxRunner } from "../sandbox/runner";
-import { jsProbeRunner } from "../sandbox/probeRunner";
+import { sandboxProbeRunner } from "../sandbox/probeRunner";
 
 const SAMPLE_SOURCE = `function normalize(iso, timeZone) {
   // Naive: trusts new Date and ignores the target zone.
@@ -83,7 +83,7 @@ async function runBattery(
   resultsList.innerHTML = "";
   summary.textContent = `Running ${LANDMINES.length} landmines…`;
 
-  const runProbe = jsProbeRunner(runner, source);
+  const runProbe = sandboxProbeRunner(runner, source);
   const tally: Record<VerdictKind, number> = { pass: 0, fail: 0, ambiguous: 0 };
 
   for (const landmine of LANDMINES) {

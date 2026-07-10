@@ -14,3 +14,8 @@ export interface RunRequest {
 export type RunResult =
   | { id: string; ok: true; value: string; durationMs: number }
   | { id: string; ok: false; error: string; durationMs: number };
+
+/** What jsProbeRunner/pyProbeRunner need from a language's sandbox runner. */
+export interface SandboxRunner {
+  run(source: string, isoInput: string, timeZone?: string): Promise<RunResult>;
+}
