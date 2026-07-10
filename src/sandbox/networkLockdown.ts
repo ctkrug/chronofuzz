@@ -21,6 +21,8 @@ const BLOCKED_APIS = ["fetch", "XMLHttpRequest", "WebSocket"] as const;
 export function lockdownNetworkGlobals(scope: Record<string, unknown>): void {
   for (const name of BLOCKED_APIS) {
     if (!(name in scope)) continue;
+    const existing = Object.getOwnPropertyDescriptor(scope, name);
+    if (existing && existing.configurable === false) continue; // already locked down
     Object.defineProperty(scope, name, {
       configurable: false,
       get(): never {
