@@ -1,4 +1,4 @@
-import type { JsRunRequest, JsRunResult } from "./types";
+import type { RunRequest, RunResult } from "./types";
 
 const DEFAULT_TIMEOUT_MS = 2000;
 
@@ -17,13 +17,13 @@ export class JsSandboxTimeoutError extends Error {
 export class JsSandboxRunner {
   constructor(private readonly timeoutMs = DEFAULT_TIMEOUT_MS) {}
 
-  run(source: string, isoInput: string, timeZone?: string): Promise<JsRunResult> {
+  run(source: string, isoInput: string, timeZone?: string): Promise<RunResult> {
     const id = crypto.randomUUID();
     const worker = new Worker(new URL("./jsWorker.ts", import.meta.url), {
       type: "module",
     });
 
-    return new Promise<JsRunResult>((resolve) => {
+    return new Promise<RunResult>((resolve) => {
       const timeout = setTimeout(() => {
         worker.terminate();
         resolve({
@@ -34,13 +34,13 @@ export class JsSandboxRunner {
         });
       }, this.timeoutMs);
 
-      worker.onmessage = (event: MessageEvent<JsRunResult>) => {
+      worker.onmessage = (event: MessageEvent<RunResult>) => {
         clearTimeout(timeout);
         worker.terminate();
         resolve(event.data);
       };
 
-      const request: JsRunRequest = { id, source, isoInput, timeZone };
+      const request: RunRequest = { id, source, isoInput, timeZone };
       worker.postMessage(request);
     });
   }

@@ -1,6 +1,7 @@
-export interface JsRunRequest {
+/** The wire request/result shapes both the JS and Python sandbox workers use. */
+export interface RunRequest {
   id: string;
-  /** Source of a single function expression or declaration to evaluate. */
+  /** Source of a single function (JS) or a `normalize`-defining script (Python) to evaluate. */
   source: string;
   /** ISO 8601 date/time string passed as the function's first argument. */
   isoInput: string;
@@ -10,6 +11,6 @@ export interface JsRunRequest {
   timeZone?: string;
 }
 
-export type JsRunResult =
+export type RunResult =
   | { id: string; ok: true; value: string; durationMs: number }
   | { id: string; ok: false; error: string; durationMs: number };
