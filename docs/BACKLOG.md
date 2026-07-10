@@ -65,10 +65,12 @@ land before anything else — see `docs/VISION.md`.
   - Pasting source beyond a defined size limit shows a clear inline error instead of silently
     truncating or producing a broken link.
 
-- [ ] **3.2 Export results as JSON.**
+- [x] **3.2 Export results as JSON.**
   - An "Export" action downloads a file containing every landmine's id, verdict, actual value,
-    and expected-behavior note.
-  - The exported file is valid JSON and includes a corpus version/date field.
+    and expected-behavior note. `buildExport` maps every completed `LandmineResult`; the button
+    is enabled only once a run finishes (and re-disabled on a new run or language switch).
+  - The exported file is valid JSON and includes a corpus version/date field — `CORPUS_VERSION`
+    plus an `exportedAt` timestamp, both verified round-trippable through `JSON.parse`.
 
 - [ ] **3.3 Design polish pass against docs/DESIGN.md.**
   - Page verified at 390/768/1440 widths per `docs/DESIGN.md`'s D3 self-review checklist, with
