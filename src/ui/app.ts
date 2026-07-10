@@ -1,11 +1,13 @@
-import { LANDMINES } from "../corpus";
+import { LANDMINES, CORPUS_VERSION } from "../corpus";
 import type { Landmine } from "../corpus";
 import type { Verdict, VerdictKind } from "../eval/types";
 import { evaluateLandmine } from "../eval/engine";
+import type { LandmineResult } from "../eval/engine";
 import { JsSandboxRunner } from "../sandbox/runner";
 import { PySandboxRunner } from "../sandbox/pySandboxRunner";
 import { sandboxProbeRunner } from "../sandbox/probeRunner";
 import type { SandboxRunner } from "../sandbox/types";
+import { buildExport } from "../export/exportResults";
 
 type Language = "javascript" | "python";
 
@@ -42,6 +44,19 @@ export interface MountAppOptions {
    * that resolves without spawning a real Worker; the app itself never passes
    * this, so production always gets the real Js/PySandboxRunner. */
   runners?: Partial<Record<Language, SandboxRunner>>;
+  /** Overrides how the Export button delivers a file — tests inject a spy
+   * instead of driving a real Blob download through happy-dom. */
+  downloadFile?: (filename: string, content: string) => void;
+}
+
+function defaultDownloadFile(filename: string, content: string): void {
+  const blob = new Blob([content], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
 }
 
 export function mountApp(root: HTMLElement, options: MountAppOptions = {}): void {
@@ -75,7 +90,12 @@ export function mountApp(root: HTMLElement, options: MountAppOptions = {}): void
   resultsPane.className = "pane results-pane";
   resultsPane.innerHTML = `
     <div class="results-header">
-      <h2>Results</h2>
+      <div class="results-title">
+        <h2>Results</h2>
+        <button id="export-button" type="button" class="export-button" disabled>
+          Export JSON
+        </button>
+      </div>
       <p id="results-summary" class="results-summary" role="status" aria-live="polite">
         ${LANDMINES.length} landmines armed. Hit run.
       </p>
@@ -92,16 +112,21 @@ export function mountApp(root: HTMLElement, options: MountAppOptions = {}): void
   const runButton = editorPane.querySelector<HTMLButtonElement>("#run-button");
   const resultsList = resultsPane.querySelector<HTMLOListElement>("#results-list");
   const summary = resultsPane.querySelector<HTMLParagraphElement>("#results-summary");
+  const exportButton = resultsPane.querySelector<HTMLButtonElement>("#export-button");
   if (
     !textarea ||
     !runButton ||
     !resultsList ||
     !summary ||
     !sourceLabel ||
+    !exportButton ||
     langButtons.length === 0
   ) {
     throw new Error("Workbench failed to render its required controls.");
   }
+
+  const downloadFile = options.downloadFile ?? defaultDownloadFile;
+  let lastResults: LandmineResult[] | null = null;
 
   const sources: Record<Language, string> = {
     javascript: LANGUAGE_META.javascript.sample,
@@ -125,6 +150,8 @@ export function mountApp(root: HTMLElement, options: MountAppOptions = {}): void
   const resetResultsPanel = (): void => {
     resultsList.innerHTML = "";
     summary.textContent = `${LANDMINES.length} landmines armed. Hit run.`;
+    lastResults = null;
+    exportButton.disabled = true;
   };
 
   textarea.addEventListener("input", () => {
@@ -162,6 +189,7 @@ export function mountApp(root: HTMLElement, options: MountAppOptions = {}): void
   runButton.addEventListener("click", () => {
     runGeneration += 1;
     const generation = runGeneration;
+    exportButton.disabled = true;
     void runBattery(
       textarea.value,
       runButton,
@@ -169,7 +197,17 @@ export function mountApp(root: HTMLElement, options: MountAppOptions = {}): void
       summary,
       runners[currentLanguage],
       () => generation === runGeneration,
+      (results) => {
+        lastResults = results;
+        exportButton.disabled = false;
+      },
     );
+  });
+
+  exportButton.addEventListener("click", () => {
+    if (!lastResults) return;
+    const exported = buildExport(lastResults, CORPUS_VERSION, new Date().toISOString());
+    downloadFile(`chronofuzz-results-${CORPUS_VERSION}.json`, JSON.stringify(exported, null, 2));
   });
 }
 
@@ -180,6 +218,7 @@ async function runBattery(
   summary: HTMLParagraphElement,
   runner: SandboxRunner,
   isCurrentRun: () => boolean,
+  onComplete: (results: LandmineResult[]) => void,
 ): Promise<void> {
   runButton.disabled = true;
   runButton.textContent = "Running…";
@@ -188,11 +227,13 @@ async function runBattery(
 
   const runProbe = sandboxProbeRunner(runner, source);
   const tally: Record<VerdictKind, number> = { pass: 0, fail: 0, ambiguous: 0 };
+  const results: LandmineResult[] = [];
 
   for (const landmine of LANDMINES) {
     const verdict = await evaluateLandmine(landmine, runProbe);
     if (!isCurrentRun()) return;
     tally[verdict.kind] += 1;
+    results.push({ landmine, verdict });
     resultsList.append(renderVerdictRow(landmine, verdict));
   }
 
@@ -202,6 +243,7 @@ async function runBattery(
     `(${LANDMINES.length} total)`;
   runButton.disabled = false;
   runButton.textContent = "Run against the battery";
+  onComplete(results);
 }
 
 /**
