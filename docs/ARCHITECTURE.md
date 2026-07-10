@@ -83,6 +83,13 @@ engine and `sandboxProbeRunner` never need to know which language they're drivin
   `run()`. Takes an injectable `WorkerFactory` for testability.
 - `probeRunner.ts` — `sandboxProbeRunner(runner, source)` adapts either `SandboxRunner` to the
   engine's `ProbeRunner`.
+- `networkLockdown.ts` — `lockdownNetworkGlobals(scope)` overrides `fetch`/`XMLHttpRequest`/
+  `WebSocket` on a given scope object so accessing them throws `NetworkAccessBlockedError`; pure
+  and idempotent (skips a name it already locked down, since redefining a non-configurable
+  accessor throws). `jsWorker.ts` calls it on `self` once at startup, before accepting any
+  message, so pasted code can't make outbound requests (story 4.1). A `Content-Security-Policy`
+  meta tag in `index.html` adds defense-in-depth on top of this and is the real backstop for the
+  Python path, which has no equivalent runtime lockdown.
 
 ### Export — `src/export/`
 
