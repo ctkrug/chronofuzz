@@ -92,11 +92,16 @@ land before anything else — see `docs/VISION.md`.
   - A test asserts that a pasted function attempting `fetch(...)` is blocked/throws rather than
     succeeding.
 
-- [ ] **4.2 Corpus regression tests with reference implementations.**
+- [x] **4.2 Corpus regression tests with reference implementations.**
   - A reference "correct" implementation and a reference "naive/buggy" implementation are
-    checked into the test suite.
+    checked into the test suite. `test/corpusRegression.test.ts` — the correct one resolves IANA
+    zone offsets via `Intl.DateTimeFormat` with spring-forward gap detection; the buggy one
+    embodies each category's documented anti-pattern (timezone-blindness, silent leap-second
+    coercion, int32/unsigned/falsy-zero epoch truncation).
   - The evaluator suite verifies the buggy implementation fails and the correct implementation
-    passes, for every landmine in the corpus.
+    passes, for every landmine in the corpus. Precisely: the correct implementation never fails
+    any of the 20 landmines; the buggy one fails exactly the 12 where its bug class applies, and
+    is asserted not to regress the corpus's paired control/ambiguous cases.
 
 - [ ] **4.3 Accessibility pass.**
   - All interactive elements are reachable and operable via keyboard alone (sane tab order, no
