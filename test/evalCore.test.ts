@@ -31,11 +31,7 @@ describe("toDisplayValue", () => {
 
 describe("evaluateSource", () => {
   it("invokes the pasted function and displays its return value", () => {
-    const result = evaluateSource(
-      "(iso) => new Date(iso)",
-      "2024-01-01T00:00:00Z",
-      undefined,
-    );
+    const result = evaluateSource("(iso) => new Date(iso)", "2024-01-01T00:00:00Z", undefined);
     expect(result).toEqual({ ok: true, value: "2024-01-01T00:00:00.000Z" });
   });
 
@@ -71,7 +67,11 @@ describe("evaluateSource", () => {
   });
 
   it("catches a non-Error throw and stringifies it", () => {
-    const result = evaluateSource("() => { throw 'a string throw'; }", "2024-01-01T00:00:00Z", undefined);
+    const result = evaluateSource(
+      "() => { throw 'a string throw'; }",
+      "2024-01-01T00:00:00Z",
+      undefined,
+    );
     expect(result).toEqual({ ok: false, error: "a string throw" });
   });
 });
