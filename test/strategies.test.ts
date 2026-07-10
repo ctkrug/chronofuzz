@@ -29,6 +29,12 @@ describe("expectInstant", () => {
   it("fails when the function rejects a valid input", () => {
     expect(grade(err("Invalid time value")).kind).toBe("fail");
   });
+
+  it("treats no probe outcome at all as an errored outcome rather than crashing", () => {
+    const verdict = grade([]);
+    expect(verdict.kind).toBe("fail");
+    expect(verdict.actual).toBe("No probe outcome was produced.");
+  });
 });
 
 describe("expectRejection", () => {
