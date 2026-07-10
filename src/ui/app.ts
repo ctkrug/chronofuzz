@@ -3,13 +3,33 @@ import type { Landmine } from "../corpus";
 import type { Verdict, VerdictKind } from "../eval/types";
 import { evaluateLandmine } from "../eval/engine";
 import { JsSandboxRunner } from "../sandbox/runner";
+import { PySandboxRunner } from "../sandbox/pySandboxRunner";
 import { sandboxProbeRunner } from "../sandbox/probeRunner";
+import type { SandboxRunner } from "../sandbox/types";
 
-const SAMPLE_SOURCE = `function normalize(iso, timeZone) {
+type Language = "javascript" | "python";
+
+const JS_SAMPLE_SOURCE = `function normalize(iso, timeZone) {
   // Naive: trusts new Date and ignores the target zone.
   const d = new Date(iso);
   return d.toISOString();
 }`;
+
+const PY_SAMPLE_SOURCE = `def normalize(iso, time_zone):
+    # Naive: trusts fromisoformat and ignores the target zone.
+    from datetime import datetime
+    return datetime.fromisoformat(iso).isoformat()`;
+
+const LANGUAGE_META: Record<Language, { labelHtml: string; sample: string }> = {
+  javascript: {
+    labelHtml: "JavaScript function under test — <code>fn(isoInput, timeZone)</code>",
+    sample: JS_SAMPLE_SOURCE,
+  },
+  python: {
+    labelHtml: "Python function under test — <code>def normalize(iso, time_zone):</code>",
+    sample: PY_SAMPLE_SOURCE,
+  },
+};
 
 const VERDICT_LABEL: Record<VerdictKind, string> = {
   pass: "PASS",
@@ -35,7 +55,11 @@ export function mountApp(root: HTMLElement): void {
   const editorPane = document.createElement("section");
   editorPane.className = "pane editor-pane";
   editorPane.innerHTML = `
-    <label for="source-input">JavaScript function under test — <code>fn(isoInput, timeZone)</code></label>
+    <div class="language-toggle" role="group" aria-label="Language">
+      <button type="button" class="lang-button is-active" data-lang="javascript" aria-pressed="true">JavaScript</button>
+      <button type="button" class="lang-button" data-lang="python" aria-pressed="false">Python</button>
+    </div>
+    <label id="source-label" for="source-input">${LANGUAGE_META.javascript.labelHtml}</label>
     <textarea id="source-input" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
     <button id="run-button" type="button">Run against the battery</button>
   `;
@@ -55,19 +79,88 @@ export function mountApp(root: HTMLElement): void {
   workbench.append(editorPane, resultsPane);
   root.append(header, workbench);
 
+  const langButtons = [...editorPane.querySelectorAll<HTMLButtonElement>(".lang-button")];
+  const sourceLabel = editorPane.querySelector<HTMLLabelElement>("#source-label");
   const textarea = editorPane.querySelector<HTMLTextAreaElement>("#source-input");
   const runButton = editorPane.querySelector<HTMLButtonElement>("#run-button");
   const resultsList = resultsPane.querySelector<HTMLOListElement>("#results-list");
   const summary = resultsPane.querySelector<HTMLParagraphElement>("#results-summary");
-  if (!textarea || !runButton || !resultsList || !summary) {
+  if (
+    !textarea ||
+    !runButton ||
+    !resultsList ||
+    !summary ||
+    !sourceLabel ||
+    langButtons.length === 0
+  ) {
     throw new Error("Workbench failed to render its required controls.");
   }
-  textarea.value = SAMPLE_SOURCE;
 
-  const runner = new JsSandboxRunner();
+  const sources: Record<Language, string> = {
+    javascript: LANGUAGE_META.javascript.sample,
+    python: LANGUAGE_META.python.sample,
+  };
+  let currentLanguage: Language = "javascript";
+  textarea.value = sources[currentLanguage];
+
+  const jsRunner = new JsSandboxRunner();
+  const pyRunner = new PySandboxRunner();
+  const runners: Record<Language, SandboxRunner> = { javascript: jsRunner, python: pyRunner };
+
+  // Bumped on every new run and on every language switch; runBattery checks
+  // it after each await and stops touching the DOM the moment it goes stale,
+  // so a stale in-flight run (e.g. a pending Pyodide call from before a
+  // language switch) can never overwrite results from a newer one.
+  let runGeneration = 0;
+
+  const resetResultsPanel = (): void => {
+    resultsList.innerHTML = "";
+    summary.textContent = `${LANDMINES.length} landmines armed. Hit run.`;
+  };
+
+  textarea.addEventListener("input", () => {
+    sources[currentLanguage] = textarea.value;
+  });
+
+  const setLanguage = (language: Language): void => {
+    if (language === currentLanguage) return;
+    runGeneration += 1;
+    if (currentLanguage === "python") {
+      pyRunner.terminate();
+    }
+    currentLanguage = language;
+    textarea.value = sources[language];
+    sourceLabel.innerHTML = LANGUAGE_META[language].labelHtml;
+    for (const button of langButtons) {
+      const isActive = button.dataset.lang === language;
+      button.classList.toggle("is-active", isActive);
+      button.setAttribute("aria-pressed", String(isActive));
+    }
+    runButton.disabled = false;
+    runButton.textContent = "Run against the battery";
+    resetResultsPanel();
+  };
+
+  for (const button of langButtons) {
+    button.addEventListener("click", () => {
+      const language = button.dataset.lang;
+      if (language === "javascript" || language === "python") {
+        setLanguage(language);
+      }
+    });
+  }
 
   runButton.addEventListener("click", () => {
-    void runBattery(textarea.value, runButton, resultsList, summary, runner);
+    runGeneration += 1;
+    const generation = runGeneration;
+    void runBattery(
+      textarea.value,
+      runButton,
+      resultsList,
+      summary,
+      runners[currentLanguage],
+      () => generation === runGeneration,
+    );
   });
 }
 
@@ -76,7 +169,8 @@ async function runBattery(
   runButton: HTMLButtonElement,
   resultsList: HTMLOListElement,
   summary: HTMLParagraphElement,
-  runner: JsSandboxRunner,
+  runner: SandboxRunner,
+  isCurrentRun: () => boolean,
 ): Promise<void> {
   runButton.disabled = true;
   runButton.textContent = "Running…";
@@ -88,10 +182,12 @@ async function runBattery(
 
   for (const landmine of LANDMINES) {
     const verdict = await evaluateLandmine(landmine, runProbe);
+    if (!isCurrentRun()) return;
     tally[verdict.kind] += 1;
     resultsList.append(renderVerdictRow(landmine, verdict));
   }
 
+  if (!isCurrentRun()) return;
   summary.textContent =
     `${tally.fail} broke · ${tally.ambiguous} ambiguous · ${tally.pass} handled ` +
     `(${LANDMINES.length} total)`;
