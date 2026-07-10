@@ -92,6 +92,19 @@ describe("evaluatePySource", () => {
     expect(result).toEqual({ ok: false, error: "ValueError: bad input" });
   });
 
+  it("stringifies a non-Error throw (Pyodide can surface plain strings/objects)", () => {
+    const pyodide: PyodideRuntime = {
+      runPython() {
+        throw "a raw string exception";
+      },
+      globals: { get: () => undefined },
+    };
+
+    const result = evaluatePySource(pyodide, "def normalize(", "2023-03-12");
+
+    expect(result).toEqual({ ok: false, error: "a raw string exception" });
+  });
+
   it("calls destroy() on the function proxy after invoking it, when present", () => {
     let destroyed = false;
     const fn = Object.assign((_iso: string) => "ok", { destroy: () => (destroyed = true) });
