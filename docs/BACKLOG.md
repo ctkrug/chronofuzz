@@ -90,11 +90,17 @@ land before anything else — see `docs/VISION.md`.
     existing `button`/`.lang-button`/`.export-button`/`.share-button`/`#source-input` rules in
     `src/style.css`; no unstyled native control found.
 
-- [ ] **3.4 Landing page (`site/`) sharing the same design system.**
+- [x] **3.4 Landing page (`site/`) sharing the same design system.**
   - The landing page states the wow moment above the fold and links directly into the
-    workbench.
+    workbench. `site/index.html` leads with a hardcoded mock of a failing DST result row (the
+    same `.result-item.result-fail` markup the real app renders) next to the headline, above the
+    fold, with a "Open the workbench" CTA to `../index.html`.
   - The landing page uses the same tokens, fonts, and favicon as the app — verified as one
-    brand, not two.
+    brand, not two. Achieved by construction: `site/index.html` links `../src/style.css`
+    directly (Vite's multi-page build bundles it into the same compiled stylesheet the app
+    uses) rather than duplicating tokens, and reuses the app's own `/favicon.svg`. Verified with
+    `test/site.test.ts`, axe-core (zero violations), and in a real browser at 390/768/1440
+    widths.
 
 ## Epic 4 — Hardening and correctness
 
