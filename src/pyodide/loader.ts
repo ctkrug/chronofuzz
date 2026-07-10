@@ -28,7 +28,15 @@ export function loadPyodideRuntime(
   importModule: PyodideModuleImporter = defaultImporter,
 ): Promise<PyodideRuntime> {
   if (!pyodideLoadPromise) {
-    pyodideLoadPromise = importModule().then((module) => module.loadPyodide());
+    // A failed load (e.g. a transient CDN blip) must not wedge every later
+    // call for the rest of the Worker's lifetime — clear the cache on
+    // rejection so the next call retries instead of replaying the failure.
+    pyodideLoadPromise = importModule()
+      .then((module) => module.loadPyodide())
+      .catch((error) => {
+        pyodideLoadPromise = null;
+        throw error;
+      });
   }
   return pyodideLoadPromise;
 }
