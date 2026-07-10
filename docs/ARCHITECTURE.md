@@ -125,7 +125,10 @@ engine and `sandboxProbeRunner` never need to know which language they're drivin
   background.
 - `runBattery` streams each landmine's verdict into the list, tallies the summary, and — once the
   full battery completes for the current generation — hands the accumulated `LandmineResult[]` to
-  an `onComplete` callback that enables the Export button.
+  an `onComplete` callback that enables the Export button. Before the first run (and again after a
+  reset/language switch), `#empty-state` previews the battery's six categories with their counts
+  (`buildEmptyStateHtml`, via `landminesByCategory()`) instead of leaving the pane blank; it's
+  hidden the moment a run starts.
 - `renderVerdictRow(landmine, verdict)` builds one row: badge, animated red strike on failures,
   the returned value inline, a collapsible actual-vs-expected diff for failures, and the note.
   All untrusted output is escaped.
