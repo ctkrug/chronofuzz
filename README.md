@@ -19,16 +19,19 @@ lets you point your function at it in seconds.
 
 ## How it works
 
-1. Paste a function `fn(isoInput, timeZone)` that takes an ISO date/time string and a target
-   IANA timezone and returns a normalized instant — or throws / returns `Invalid Date` for input
-   that denotes an impossible time. The pre-filled sample is the naive
-   `new Date(iso).toISOString()` passthrough, so you can hit run immediately and watch it break.
-2. Chronofuzz executes it once per landmine, in an isolated sandbox:
-   - **JavaScript** runs in a fresh dedicated Web Worker per landmine (so a hang can be killed by
-     terminating the worker) with no access to the DOM or the host page's state (network lockdown
-     via CSP is tracked in the backlog).
-   - **Python** via [Pyodide](https://pyodide.org) (CPython on WebAssembly), loaded lazily from a
-     CDN, is planned — see the backlog.
+1. Pick JavaScript or Python with the toggle, then paste a function that takes an ISO date/time
+   string and a target IANA timezone and returns a normalized instant — or throws / returns
+   `Invalid Date`/raises for input that denotes an impossible time. JavaScript's is a function
+   expression, `fn(isoInput, timeZone)`; Python's is a `def normalize(iso, time_zone):`. Each
+   language is pre-filled with its own naive passthrough sample, so you can hit run immediately
+   and watch it break.
+2. Chronofuzz executes it once per landmine, in an isolated sandbox, with no access to the DOM or
+   the host page's state (network lockdown via CSP is tracked in the backlog):
+   - **JavaScript** runs in a fresh dedicated Web Worker per landmine, so a hang can be killed by
+     terminating the worker without corrupting later runs.
+   - **Python** runs via [Pyodide](https://pyodide.org) (CPython on WebAssembly) in one
+     persistent Worker reused across a run, loaded lazily from a CDN on first use — sessions that
+     only test JavaScript never pay the download.
 3. Each landmine has an automated **evaluator** that grades your function's output as **pass**,
    **fail**, or **ambiguous** — a real machine-checkable verdict, not a raw output dump. Inputs
    with no single correct answer (a DST fall-back hour, a locale-ambiguous slash date) are marked
@@ -41,14 +44,16 @@ Everything runs client-side. No code you paste is ever sent to a server.
 
 ## Status
 
-Early scaffold — see [`docs/VISION.md`](docs/VISION.md) for the full plan and
+The core diagnosis loop and Python support are built — both languages run against the full
+corpus with graded verdicts. See [`docs/VISION.md`](docs/VISION.md) for the full plan and
 [`docs/BACKLOG.md`](docs/BACKLOG.md) for what's built vs. planned.
 
 ## Stack
 
 - TypeScript, built with [Vite](https://vitejs.dev) as a static, self-contained site
 - [Vitest](https://vitest.dev) for unit tests
-- Web Workers for sandboxed JS execution; [Pyodide](https://pyodide.org) for sandboxed Python
+- A dedicated Web Worker sandbox per language: fresh-per-run for JS, one persistent
+  Pyodide-backed worker for Python
 - Zero backend — deployable as static files to any host or subpath
 
 ## Developing
