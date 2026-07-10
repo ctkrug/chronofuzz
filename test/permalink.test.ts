@@ -34,6 +34,15 @@ describe("encodeShareHash / decodeShareHash", () => {
     expect(decoded).toEqual(state);
   });
 
+  it("round-trips a literal '+' distinctly from an encoded space (classic URLSearchParams gotcha)", () => {
+    const state = {
+      language: "javascript" as const,
+      source: "function normalize(iso) {\n  return iso + '' + 1 + 1;\n}",
+    };
+    const decoded = decodeShareHash(encodeShareHash(state));
+    expect(decoded).toEqual(state);
+  });
+
   it("produces a hash starting with '#'", () => {
     expect(encodeShareHash({ language: "javascript", source: "x" })).toMatch(/^#/);
   });
