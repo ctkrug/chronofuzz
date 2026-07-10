@@ -19,16 +19,23 @@ lets you point your function at it in seconds.
 
 ## How it works
 
-1. Paste a function (JS or Python) that takes a date/time value and returns a transformed or
-   derived value.
+1. Paste a function `fn(isoInput, timeZone)` that takes an ISO date/time string and a target
+   IANA timezone and returns a normalized instant — or throws / returns `Invalid Date` for input
+   that denotes an impossible time. The pre-filled sample is the naive
+   `new Date(iso).toISOString()` passthrough, so you can hit run immediately and watch it break.
 2. Chronofuzz executes it once per landmine, in an isolated sandbox:
-   - **JavaScript** runs in a dedicated Web Worker with no access to the DOM or the host page's
-     state (network lockdown via CSP is tracked in the backlog).
-   - **Python** runs via [Pyodide](https://pyodide.org) (CPython compiled to WebAssembly),
-     loaded lazily from a CDN so the base app stays small.
-3. Each landmine's expected behavior is compared against your function's actual output.
-4. Mismatches are flagged inline, with the landmine's real-world context and the value your
-   function actually produced.
+   - **JavaScript** runs in a fresh dedicated Web Worker per landmine (so a hang can be killed by
+     terminating the worker) with no access to the DOM or the host page's state (network lockdown
+     via CSP is tracked in the backlog).
+   - **Python** via [Pyodide](https://pyodide.org) (CPython on WebAssembly), loaded lazily from a
+     CDN, is planned — see the backlog.
+3. Each landmine has an automated **evaluator** that grades your function's output as **pass**,
+   **fail**, or **ambiguous** — a real machine-checkable verdict, not a raw output dump. Inputs
+   with no single correct answer (a DST fall-back hour, a locale-ambiguous slash date) are marked
+   ambiguous rather than silently coerced.
+4. Failing rows draw a red strike over the landmine and show the wrong value your function
+   returned inline, expanding to an actual-vs-expected diff, alongside the landmine's real-world
+   context.
 
 Everything runs client-side. No code you paste is ever sent to a server.
 
