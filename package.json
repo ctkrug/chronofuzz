@@ -14,11 +14,13 @@
     "build": "npm run typecheck && vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "^2.1.9",
     "axe-core": "^4.12.1",
     "eslint": "^9.39.4",
     "happy-dom": "^20.10.6",
