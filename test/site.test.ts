@@ -61,3 +61,39 @@ describe("landing page (story 3.4)", () => {
     expect(results.violations).toEqual([]);
   }, 30000);
 });
+
+/**
+ * The app itself is the deployed live URL, so its own page (index.html) has to
+ * carry the link-preview metadata, the search-intent copy, and the portfolio
+ * cross-link, not just the marketing landing page.
+ */
+describe("workbench page (index.html)", () => {
+  function appBodyDoc(): Document {
+    // Strip the module <script> before parsing: it's irrelevant to the markup
+    // assertions here and makes happy-dom noisily try to resolve its src.
+    const body = (appHtml.match(/<body[^>]*>([\s\S]*)<\/body>/)?.[1] ?? "").replace(
+      /<script[\s\S]*?<\/script>/g,
+      "",
+    );
+    const doc = document.implementation.createHTMLDocument("");
+    doc.body.innerHTML = body;
+    return doc;
+  }
+
+  it("carries Open Graph tags for link previews", () => {
+    expect(appHtml).toContain('property="og:title"');
+    expect(appHtml).toContain('property="og:description"');
+  });
+
+  it("answers the common date-testing questions below the fold", () => {
+    const faqs = [...appBodyDoc().querySelectorAll(".faq .faq-item h3")];
+    expect(faqs.length).toBeGreaterThanOrEqual(3);
+    expect(faqs.some((h) => /DST|timezone/i.test(h.textContent ?? ""))).toBe(true);
+  });
+
+  it("footer links the source first, then the wider portfolio", () => {
+    const links = [...appBodyDoc().querySelectorAll<HTMLAnchorElement>(".app-footer a")];
+    expect(links[0]?.getAttribute("href")).toBe("https://github.com/ctkrug/chronofuzz");
+    expect(links.some((a) => a.getAttribute("href") === "https://apps.charliekrug.com")).toBe(true);
+  });
+});
