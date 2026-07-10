@@ -151,7 +151,8 @@ circular dependency.
 ## Run / test / build
 
 - `npm run dev` — Vite dev server.
-- `npm test` — Vitest (happy-dom, pinned `TZ=UTC` for deterministic zone grading).
+- `npm test` — Vitest (happy-dom, pinned `TZ=UTC` for deterministic zone grading). Includes an
+  `axe-core` audit of the mounted app (`test/a11y.test.ts`) alongside the unit/integration suite.
 - `npm run typecheck` — `tsc` for app + worker projects.
 - `npm run lint` / `npm run format:check` — ESLint + Prettier.
 - `npm run build` — typecheck + `vite build` → `dist/` (static, base-path `./`, subpath-safe).
