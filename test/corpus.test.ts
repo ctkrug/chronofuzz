@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LANDMINES, getLandmineById, landminesByCategory } from "../src/corpus";
+import { LANDMINES, CORPUS_VERSION, getLandmineById, landminesByCategory } from "../src/corpus";
 import type { LandmineCategory } from "../src/corpus";
 
 const ALL_CATEGORIES: LandmineCategory[] = [
@@ -72,5 +72,9 @@ describe("corpus", () => {
     const dstTitles = LANDMINES.filter((l) => l.category === "dst").map((l) => l.id);
     expect(dstTitles).toContain("dst-spring-forward-nonexistent");
     expect(dstTitles).toContain("dst-fall-back-ambiguous");
+  });
+
+  it("exposes CORPUS_VERSION as a plain YYYY-MM-DD date (story 3.2)", () => {
+    expect(CORPUS_VERSION).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 });
