@@ -185,7 +185,7 @@ export function mountApp(root: HTMLElement, options: MountAppOptions = {}): void
     });
   }
 
-  runButton.addEventListener("click", () => {
+  const triggerRun = (): void => {
     runGeneration += 1;
     const generation = runGeneration;
     exportButton.disabled = true;
@@ -201,7 +201,9 @@ export function mountApp(root: HTMLElement, options: MountAppOptions = {}): void
         exportButton.disabled = false;
       },
     );
-  });
+  };
+
+  runButton.addEventListener("click", triggerRun);
 
   exportButton.addEventListener("click", () => {
     if (!lastResults) return;
