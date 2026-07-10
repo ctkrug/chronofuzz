@@ -77,11 +77,18 @@ land before anything else — see `docs/VISION.md`.
   - The exported file is valid JSON and includes a corpus version/date field — `CORPUS_VERSION`
     plus an `exportedAt` timestamp, both verified round-trippable through `JSON.parse`.
 
-- [ ] **3.3 Design polish pass against docs/DESIGN.md.**
+- [x] **3.3 Design polish pass against docs/DESIGN.md.**
   - Page verified at 390/768/1440 widths per `docs/DESIGN.md`'s D3 self-review checklist, with
-    no horizontal scroll or clipped content at any of the three.
+    no horizontal scroll or clipped content at any of the three. Checked in a real browser
+    (Playwright): no `scrollWidth > clientWidth` at any of the three, workbench composes cleanly
+    (side-by-side ≥900px, stacked below it per the existing `@media (max-width: 900px)` rule).
+    Fixed one real defect found in the pass: the results pane's pre-run empty state was a wall of
+    blank space (a D2 violation — "empty states are designed, not blank") — it now previews the
+    battery's six landmine categories with their counts via `landminesByCategory()`.
   - Every interactive control (button, toggle, textarea) has themed hover, focus-visible,
-    active, and disabled states — none left as unstyled native defaults.
+    active, and disabled states — none left as unstyled native defaults. Verified against the
+    existing `button`/`.lang-button`/`.export-button`/`.share-button`/`#source-input` rules in
+    `src/style.css`; no unstyled native control found.
 
 - [ ] **3.4 Landing page (`site/`) sharing the same design system.**
   - The landing page states the wow moment above the fold and links directly into the
