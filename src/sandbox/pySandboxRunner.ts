@@ -27,6 +27,7 @@ const defaultWorkerFactory: WorkerFactory = () =>
  */
 export class PySandboxRunner {
   private worker: Worker | null = null;
+  private cancelPending: (() => void) | null = null;
 
   constructor(
     private readonly timeoutMs = DEFAULT_TIMEOUT_MS,
@@ -41,23 +42,43 @@ export class PySandboxRunner {
     const worker = this.worker;
 
     return new Promise<RunResult>((resolve) => {
+      let settled = false;
+      const settle = (result: RunResult): void => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeout);
+        worker.removeEventListener("message", onMessage);
+        this.cancelPending = null;
+        resolve(result);
+      };
+
       const timeout = setTimeout(() => {
-        this.terminate();
-        resolve({
+        settle({
           id,
           ok: false,
           error: new PySandboxTimeoutError(this.timeoutMs).message,
           durationMs: this.timeoutMs,
         });
+        this.terminate();
       }, this.timeoutMs);
 
       const onMessage = (event: MessageEvent<RunResult>) => {
         if (event.data.id !== id) return;
-        clearTimeout(timeout);
-        worker.removeEventListener("message", onMessage);
-        resolve(event.data);
+        settle(event.data);
       };
       worker.addEventListener("message", onMessage);
+
+      // Lets terminate() settle this call immediately (rather than leaving
+      // it to hang until the timeout above fires on a worker that's already
+      // gone) when the UI cancels a run in flight, e.g. switching languages
+      // mid-battery.
+      this.cancelPending = () =>
+        settle({
+          id,
+          ok: false,
+          error: "Sandboxed Python run was cancelled.",
+          durationMs: 0,
+        });
 
       const request: RunRequest = { id, source, isoInput, timeZone };
       worker.postMessage(request);
@@ -68,9 +89,13 @@ export class PySandboxRunner {
    * Terminates the underlying worker, if any, discarding any in-flight run
    * and the loaded Pyodide runtime with it. Called on timeout and when the UI
    * cancels a run (e.g. switching away from Python mid-battery) so no
-   * orphaned worker keeps running after the user has moved on.
+   * orphaned worker keeps running after the user has moved on. Also
+   * immediately settles any pending run() promise (rather than leaving it to
+   * hang until its own timeout), honoring the SandboxRunner.terminate()
+   * contract.
    */
   terminate(): void {
+    this.cancelPending?.();
     this.worker?.terminate();
     this.worker = null;
   }
