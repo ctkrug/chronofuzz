@@ -151,11 +151,28 @@ live in `src/style.css` (see `docs/DESIGN.md`). The `Language` type (`"javascrip
 lives in `src/language.ts` so both `ui/app.ts` and `share/permalink.ts` can import it without a
 circular dependency.
 
+### Landing page — `site/`
+
+- `site/index.html` — a static marketing page, separate from the app, that leads with the wow
+  moment: a hardcoded mock of a failing DST result row using the exact same `.result-item
+.result-fail` markup/classes the real app renders, so it's pixel-identical to what a user
+  will actually see. Links into the workbench via a plain `../index.html` CTA. Reuses
+  `../src/style.css` directly (tokens, fonts, buttons, result-row styling) rather than
+  duplicating it, plus the app's own `/favicon.svg`, so the two pages share one brand by
+  construction rather than by convention.
+- `site/site.css` — layout only for sections `style.css` doesn't define (hero grid, step cards,
+  category overview, footer); everything else comes from the shared import.
+- Built as a second Vite entry (see `vite.config.ts` below) into `dist/site/index.html`,
+  alongside the app at `dist/index.html` — one `npm run build` produces both.
+
 ## Run / test / build
 
-- `npm run dev` — Vite dev server.
+- `npm run dev` — Vite dev server. The landing page is reachable at `/site/` alongside the app.
 - `npm test` — Vitest (happy-dom, pinned `TZ=UTC` for deterministic zone grading). Includes an
-  `axe-core` audit of the mounted app (`test/a11y.test.ts`) alongside the unit/integration suite.
+  `axe-core` audit of the mounted app (`test/a11y.test.ts`) and of the static landing page
+  (`test/site.test.ts`) alongside the unit/integration suite.
 - `npm run typecheck` — `tsc` for app + worker projects.
 - `npm run lint` / `npm run format:check` — ESLint + Prettier.
 - `npm run build` — typecheck + `vite build` → `dist/` (static, base-path `./`, subpath-safe).
+  `vite.config.ts` builds two HTML entries — `index.html` (the app) and `site/index.html` (the
+  landing page) — into that one output dir.
