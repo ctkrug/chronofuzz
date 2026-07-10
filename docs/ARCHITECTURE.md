@@ -71,7 +71,8 @@ engine and `sandboxProbeRunner` never need to know which language they're drivin
 - `evalCore.ts` — worker-free `evaluateSource(source, isoInput, timeZone)` + `toDisplayValue` for
   JS. Shared by `jsWorker` and the Node tests so run semantics are identical.
 - `jsWorker.ts` — the JS Web Worker; owns message plumbing + timing, delegates to `evalCore`.
-- `runner.ts` — `JsSandboxRunner`: spawns a fresh worker per `run()`, enforces a timeout.
+- `runner.ts` — `JsSandboxRunner`: spawns a fresh worker per `run()`, enforces a timeout. Takes
+  an injectable `WorkerFactory` for testability, mirroring `PySandboxRunner`.
 - `pyEvalCore.ts` — worker-free `evaluatePySource(pyodide, source, isoInput, timeZone)`: execs
   the pasted source, looks up its `normalize` function, calls it, normalizes both a return value
   and a raised exception into a designed `PyEvalResult`. Tested against a fake `PyodideRuntime`
@@ -109,9 +110,12 @@ engine and `sandboxProbeRunner` never need to know which language they're drivin
 ### Pyodide — `src/pyodide/`
 
 - `loader.ts` — `loadPyodideRuntime(importModule?)` lazily `import()`s Pyodide's ESM CDN build on
-  first use and caches the result. Dynamic `import()` (not a `<script>` tag) so the same loader
-  works from both the main thread and a module Worker — `pyWorker.ts` calls it directly. The
-  importer is injectable so tests supply a fake module instead of hitting the CDN.
+  first use and caches the result; a failed load clears the cache so the next call retries
+  instead of replaying the same rejection forever (a transient CDN blip must not permanently
+  wedge Python mode for the rest of the Worker's lifetime). Dynamic `import()` (not a `<script>`
+  tag) so the same loader works from both the main thread and a module Worker — `pyWorker.ts`
+  calls it directly. The importer is injectable so tests supply a fake module instead of hitting
+  the CDN.
 
 ### UI — `src/ui/app.ts`
 
@@ -171,6 +175,11 @@ circular dependency.
 - `npm test` — Vitest (happy-dom, pinned `TZ=UTC` for deterministic zone grading). Includes an
   `axe-core` audit of the mounted app (`test/a11y.test.ts`) and of the static landing page
   (`test/site.test.ts`) alongside the unit/integration suite.
+- `npm run test:coverage` — Vitest with v8 coverage (`@vitest/coverage-v8`); every pure core
+  logic module (`corpus/`, `eval/`, `export/`, `share/`) sits at 100% lines. The worker entry
+  points (`jsWorker.ts`, `pyWorker.ts`) and `main.ts` are intentionally excluded — they're thin
+  message-plumbing wrappers around the tested `evalCore`/`pyEvalCore`, untestable without a real
+  browser Worker.
 - `npm run typecheck` — `tsc` for app + worker projects.
 - `npm run lint` / `npm run format:check` — ESLint + Prettier.
 - `npm run build` — typecheck + `vite build` → `dist/` (static, base-path `./`, subpath-safe).
