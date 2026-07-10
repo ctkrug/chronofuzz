@@ -91,11 +91,19 @@ land before anything else — see `docs/VISION.md`.
 
 ## Epic 4 — Hardening and correctness
 
-- [ ] **4.1 Network lockdown for the JS sandbox.**
+- [x] **4.1 Network lockdown for the JS sandbox.**
   - The JS Worker is constrained (CSP and/or sandboxed-iframe boundary) so pasted code cannot
-    call `fetch`/`XMLHttpRequest`/`WebSocket`.
+    call `fetch`/`XMLHttpRequest`/`WebSocket`. `lockdownNetworkGlobals` (`src/sandbox/
+    networkLockdown.ts`) overrides those three globals in the worker's own scope before it
+    accepts any message, so a pasted call throws `NetworkAccessBlockedError` instead of
+    succeeding; a scoped `Content-Security-Policy` meta tag (`index.html`) adds defense-in-depth
+    and is the real backstop for the Python/Pyodide path, which has no equivalent runtime
+    lockdown. Verified end-to-end in a real browser (Playwright): both JS and Python runs
+    complete with no CSP console violations and Pyodide still loads from its CDN.
   - A test asserts that a pasted function attempting `fetch(...)` is blocked/throws rather than
-    succeeding.
+    succeeding. `test/networkLockdown.test.ts` exercises `lockdownNetworkGlobals` against an
+    injected fake scope (the same dependency-injection pattern used throughout this codebase,
+    since the real Worker environment isn't available under happy-dom).
 
 - [x] **4.2 Corpus regression tests with reference implementations.**
   - A reference "correct" implementation and a reference "naive/buggy" implementation are
