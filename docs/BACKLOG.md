@@ -28,22 +28,34 @@ land before anything else — see `docs/VISION.md`.
 
 ## Epic 2 — Python support via Pyodide
 
-- [ ] **2.1 Wire Pyodide execution mirroring the JS sandbox.**
+- [x] **2.1 Wire Pyodide execution mirroring the JS sandbox.**
   - Pasting a Python function and running it executes via `loadPyodideRuntime()` and returns a
-    real per-landmine value for each result row.
-  - Pyodide is not fetched on initial page load in JS mode — confirmed via network inspection
-    that no Pyodide request fires until the user switches to Python.
+    real per-landmine value for each result row. `pyWorker.ts` loads Pyodide, execs the pasted
+    source, and calls its `normalize(iso, time_zone)` via `pyEvalCore.evaluatePySource`; results
+    render through the same `renderVerdictRow` as JS since the grading engine only ever sees the
+    language-agnostic `ProbeOutcome` shape.
+  - Pyodide is not fetched on initial page load in JS mode. `PySandboxRunner` only spawns its
+    worker (and that worker only imports Pyodide) inside `run()`, which is called exclusively
+    from a Run click while in Python mode — stricter than "not fetched until switching to
+    Python": switching alone doesn't fetch it either.
 
-- [ ] **2.2 Add a language toggle to the UI.**
-  - A toggle switches the editor's sample source and syntax hint between JS and Python.
-  - Switching languages mid-run cancels any in-flight run cleanly — no orphaned worker or
-    Pyodide call updates the UI after the switch.
+- [x] **2.2 Add a language toggle to the UI.**
+  - A toggle switches the editor's sample source and syntax hint between JS and Python, with
+    each language keeping its own edit buffer across switches.
+  - Switching languages mid-run cancels any in-flight run cleanly: a run-generation counter is
+    bumped on every switch and checked by `runBattery` after each await, so a stale run stops
+    touching the DOM; `PySandboxRunner.terminate()` is also called so no orphaned worker keeps
+    running in the background.
 
-- [ ] **2.3 Timeout and error handling parity between JS and Python paths.**
+- [x] **2.3 Timeout and error handling parity between JS and Python paths.**
   - A pasted function that infinite-loops in Python is interrupted within a bounded time and
-    reported as a timeout, not a hung UI.
-  - Python exceptions (e.g. `ValueError`) are caught and displayed with the exception message,
-    not swallowed.
+    reported as a timeout, not a hung UI. `PySandboxRunner` mirrors `JsSandboxRunner`'s
+    timeout-then-terminate mechanism (a longer 20s default budget, since Pyodide's WASM load is
+    slower than spinning up a plain JS worker); `worker.terminate()` forcibly kills the worker
+    thread from the main thread regardless of what synchronous Python code it's stuck running.
+  - Python exceptions (e.g. `ValueError`) are caught by `evaluatePySource` and displayed with the
+    exception message, not swallowed — verified against a fake `PyodideRuntime` in
+    `pyEvalCore.test.ts`.
 
 ## Epic 3 — Product polish and shareability
 
